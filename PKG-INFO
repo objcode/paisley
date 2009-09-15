@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: paisley
+Version: 0.1
+Summary: Paisley is a CouchDB client written in Python to be used within a Twisted application.
+Home-page: http://launchpad.net/paisley
+Author: Paisley Developpers
+Author-email: UNKNOWN
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
