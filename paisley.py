@@ -60,7 +60,7 @@ class CouchDB(object):
         """
         self.host = host
         self.port = int(port)
-        self.url_template = "http://%s:%s/%%s" % (self.host, self.port)
+        self.url_template = "http://%s:%s%%s" % (self.host, self.port)
         if dbName is not None:
             self.bindToDB(dbName)
 
@@ -234,6 +234,9 @@ class CouchDB(object):
         Open a view of a document in a given database.
         """
         uri = "/%s/_design/%s/_view/%s" % (dbName, docId, viewId)
+
+        for arg in kwargs.keys():
+            kwargs[arg] = simplejson.dumps(kwargs[arg])
 
         if kwargs:
             uri += "?%s" % (urlencode(kwargs),)
