@@ -6,7 +6,10 @@
 CouchDB client.
 """
 
-import simplejson
+try:
+    import json
+except ImportError:
+    import simplejson as json
 from urllib import urlencode
 
 from twisted.web.client import HTTPClientFactory
@@ -69,7 +72,7 @@ class CouchDB(object):
         """
         Parse JSON result from the DB.
         """
-        return simplejson.loads(result)
+        return json.loads(result)
 
 
     def bindToDB(self, dbName):
@@ -206,7 +209,7 @@ class CouchDB(object):
         # Responses: {u'_rev': 1175338395, u'_id': u'mydoc', u'ok': True}
         # 409 Conflict, 500 Internal Server Error
         if not isinstance(body, (str, unicode)):
-            body = simplejson.dumps(body)
+            body = json.dumps(body)
         if docId is not None:
             d = self.put("/%s/%s" % (dbName, docId), body)
         else:
@@ -236,7 +239,7 @@ class CouchDB(object):
         uri = "/%s/_design/%s/_view/%s" % (dbName, docId, viewId)
 
         for arg in kwargs.keys():
-            kwargs[arg] = simplejson.dumps(kwargs[arg])
+            kwargs[arg] = json.dumps(kwargs[arg])
 
         if kwargs:
             uri += "?%s" % (urlencode(kwargs),)
