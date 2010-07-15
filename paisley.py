@@ -278,7 +278,10 @@ class CouchDB(object):
         C{getPage}-like.
         """
         url = self.url_template % (uri,)
-        kwargs["headers"] = {"Accept": "application/json"}
+        kwargs["headers"] = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
         factory = HTTPClientFactory(url, **kwargs)
         from twisted.internet import reactor
         reactor.connectTCP(self.host, self.port, factory)
