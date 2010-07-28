@@ -40,6 +40,7 @@ except ImportError:
                 d = kw or self.kw
             return self.fn(*(self.args + args), **d)
 
+SOCK_TIMEOUT = 300
 
 
 class CouchDB(object):
@@ -284,7 +285,7 @@ class CouchDB(object):
         }
         factory = HTTPClientFactory(url, **kwargs)
         from twisted.internet import reactor
-        reactor.connectTCP(self.host, self.port, factory)
+        reactor.connectTCP(self.host, self.port, factory, timeout=SOCK_TIMEOUT)
         return factory.deferred
 
 
