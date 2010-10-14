@@ -5,7 +5,11 @@
 Test for couchdb client.
 """
 
-import simplejson
+try:
+    import json
+except:
+    import simplejson as json
+
 import cgi
 
 from twisted.trial.unittest import TestCase
@@ -294,7 +298,7 @@ class CouchDBTestCase(TestCase):
         Test openView.
         """
         d = self.client.openView("mydb", "viewdoc", "myview")
-        self.assertEquals(self.client.uri, "/mydb/_view/viewdoc/myview")
+        self.assertEquals(self.client.uri, "/mydb/_design/viewdoc/_view/myview")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
@@ -310,9 +314,9 @@ class CouchDBTestCase(TestCase):
                                  count=10)
         self.assertEquals(self.client.kwargs["method"], "GET")
         self.failUnless(
-            self.client.uri.startswith("/mydb/_view/viewdoc/myview"))
+            self.client.uri.startswith("/mydb/_design/viewdoc/_view/myview"))
         query = cgi.parse_qs(self.client.uri.split('?', 1)[-1])
-        self.assertEquals(query["startkey"], ["foo"])
+        self.assertEquals(query["startkey"], ['"foo"'])
         self.assertEquals(query["count"], ["10"])
         return self._checkParseDeferred(d)
 
@@ -394,7 +398,7 @@ class ConnectedCouchDBTestCase(TestCase):
         Test listDB.
         """
         data = [u"mydb"]
-        self.resource.result = simplejson.dumps(data)
+        self.resource.result = json.dumps(data)
         d = self.client.listDB()
         def cb(result):
             self.assertEquals(result, data)
