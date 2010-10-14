@@ -336,7 +336,7 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(query, dict(count=['5']))
         self.assertEquals(self.client.kwargs['postdata'], 
                           {'keys': '[1, 3, 4, "hello, world", {"1": 5}]'})
-
+        
     def test_tempView(self):
         """
         Test tempView.
