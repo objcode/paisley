@@ -320,6 +320,17 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(query["count"], ["10"])
         return self._checkParseDeferred(d)
 
+    def test_openViewWithKeysQuery(self):
+        """
+        Test openView handles couchdb's strange requirements for keys arguments
+        """
+        d = self.client.openView("mydb",
+                                 "viewdoc",
+                                 "myview2",
+                                 keys=[1,3,4, "hello, world", {1: 5}]
+                                 count=5)
+        self.assertEquals(self.client.kwargs["method"], "POST")
+
 
     def test_tempView(self):
         """

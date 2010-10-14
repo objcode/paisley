@@ -242,11 +242,16 @@ class CouchDB(object):
         for arg in kwargs.keys():
             kwargs[arg] = json.dumps(kwargs[arg])
 
-        if kwargs:
+        if 'keys' in kwargs:
+            #couchdb is crazy and requires that keys be passed in a post body
+            options = kwargs.copy()
+            keys = {'keys': options.pop('keys')}
+            uri += "?%s" % (urlencode(options),)
+            return self.post(uri, body=keys)
+        elif kwargs:
+            # if not keys we just encode everything in the url
             uri += "?%s" % (urlencode(kwargs),)
-
-        return self.get(uri
-            ).addCallback(self.parseResult)
+            return self.get(uri).addCallback(self.parseResult)
 
 
     def addViews(self, document, views):
