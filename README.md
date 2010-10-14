@@ -12,4 +12,4 @@ Known issues:
 This isn't under heavy maintence by me, I only use a subset of the functionality and wrap the rest away in a non-portable internal library.  Please fork and make it better.
 
 
-For the initial repo, see http://github.com/smcq/paisley.  David has asked me to make this the official repo since we're actively keeping it up with couchdb version bumps.
+For David's initial repo, see https://launchpad.net/paisley.  David has asked me to make github the official repo since we're actively keeping it up with couchdb version bumps.

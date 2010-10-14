@@ -14,7 +14,7 @@ def main():
         author="Paisley Developpers",
         author_email="",
         license="MIT",
-        url="http://launchpad.net/paisley",
+        url="http://github.com/smcq/paisley",
         py_modules=["paisley", "test_paisley"],
     )
 
