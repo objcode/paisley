@@ -324,13 +324,18 @@ class CouchDBTestCase(TestCase):
         """
         Test openView handles couchdb's strange requirements for keys arguments
         """
-        d = self.client.openView("mydb",
-                                 "viewdoc",
+        d = self.client.openView("mydb2",
+                                 "viewdoc2",
                                  "myview2",
-                                 keys=[1,3,4, "hello, world", {1: 5}]
+                                 keys=[1,3,4, "hello, world", {1: 5}],
                                  count=5)
         self.assertEquals(self.client.kwargs["method"], "POST")
-
+        self.failUnless(
+            self.client.uri.startswith('/mydb2/_design/viewdoc2/_view/myview2'))
+        query = cgi.parse_qs(self.client.uri.split('?', 1)[-1])
+        self.assertEquals(query, dict(count=['5']))
+        self.assertEquals(self.client.kwargs['postdata'], 
+                          {'keys': '[1, 3, 4, "hello, world", {"1": 5}]'})
 
     def test_tempView(self):
         """

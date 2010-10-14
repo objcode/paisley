@@ -242,11 +242,14 @@ class CouchDB(object):
         for arg in kwargs.keys():
             kwargs[arg] = json.dumps(kwargs[arg])
 
-        if 'keys' in kwargs:
+        if not kwargs:
+            return self.get(uri).addCallback(self.parseResult)
+        elif 'keys' in kwargs:
             #couchdb is crazy and requires that keys be passed in a post body
             options = kwargs.copy()
             keys = {'keys': options.pop('keys')}
-            uri += "?%s" % (urlencode(options),)
+            if options:
+                uri += "?%s" % (urlencode(options),)
             return self.post(uri, body=keys)
         elif kwargs:
             # if not keys we just encode everything in the url
