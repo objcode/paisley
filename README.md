@@ -1,5 +1,10 @@
 Implements the CouchDB API for twisted.
 
+Release Notes (0.1->0.2):
+
+- Updated couchdb support up to version CouchDB 1.0.1
+
+
 Known issues:
 
 - Doesn't keep connections alive between requests.
