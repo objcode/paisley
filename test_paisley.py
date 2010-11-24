@@ -367,6 +367,11 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
+    def test_escapeId(self):
+        d = self.client.openDoc("mydb", "my doc with spaces")
+        self.assertEquals(self.client.uri, "/mydb/my%20doc%20with%20spaces")
+        self.assertEquals(self.client.kwargs["method"], "GET")
+        return self._checkParseDeferred(d)
 
 
 class FakeCouchDBResource(resource.Resource):
