@@ -60,6 +60,17 @@ class CouchDBTestCase(TestCase):
         Create a fake client to be used in the tests.
         """
         self.client = TestableCouchDB("localhost")
+    
+    def test_auth_init(self):
+        """
+        Test setting up client with authentication
+        """
+        self.client_auth = paisley.CouchDB("localhost",
+                                           username="test",
+                                           password="testpass")
+        
+        self.assertEquals(self.client_auth.username, "test")
+        self.assertEquals(self.client_auth.password, "testpass")
 
 
     def test_get(self):
