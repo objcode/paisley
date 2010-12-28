@@ -1,4 +1,4 @@
-.pyc
+*.pyc
 build
 _trial_temp
 PKG-INFO
