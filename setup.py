@@ -15,7 +15,7 @@ def main():
         author_email="",
         license="MIT",
         url="http://github.com/smcq/paisley",
-        py_modules=["paisley", "paisley.test_paisley"],
+        py_modules=["paisley", "paisley.http_keepalive", "paisley.test_paisley"],
     )
 
 if __name__ == "__main__":
