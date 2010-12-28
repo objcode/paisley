@@ -292,8 +292,10 @@ class CouchDB(object):
         kwargs["headers"] = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization" : "Basic %s" % b64encode("%s:%s" % (self.username, self.password))
         }
+        if self.username:
+            kwargs["headers"]["Authorization"] = "Basic %s" % b64encode("%s:%s" % (self.username, self.password))
+        
         factory = HTTPClientFactory(url, **kwargs)
         from twisted.internet import reactor
         reactor.connectTCP(self.host, self.port, factory, timeout=SOCK_TIMEOUT)
