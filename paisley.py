@@ -48,7 +48,7 @@ class CouchDB(object):
     CouchDB client: hold methods for accessing a couchDB.
     """
 
-    def __init__(self, host, port=5984, dbName=None):
+    def __init__(self, host, port=5984, dbName=None, username=None, password=None):
         """
         Initialize the client for given host.
 
@@ -64,6 +64,8 @@ class CouchDB(object):
         """
         self.host = host
         self.port = int(port)
+        self.username = username
+        self.password =password
         self.url_template = "http://%s:%s%%s" % (self.host, self.port)
         if dbName is not None:
             self.bindToDB(dbName)
@@ -286,10 +288,11 @@ class CouchDB(object):
         """
         C{getPage}-like.
         """
-        url = self.url_template % (uri,)
+        url = str(self.url_template % (uri,))
         kwargs["headers"] = {
             "Accept": "application/json",
             "Content-Type": "application/json",
+            "Authorization" : "Basic %s" % b64encode("%s:%s" % (self.username, self.password))
         }
         factory = HTTPClientFactory(url, **kwargs)
         from twisted.internet import reactor

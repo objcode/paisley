@@ -59,7 +59,7 @@ class CouchDBTestCase(TestCase):
         """
         Create a fake client to be used in the tests.
         """
-        self.client = TestableCouchDB("locahost")
+        self.client = TestableCouchDB("localhost")
 
 
     def test_get(self):
