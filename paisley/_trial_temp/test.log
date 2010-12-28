@@ -1,0 +1,40 @@
+2010-12-28 13:00:23-0700 [-] Log opened.
+2010-12-28 13:00:23-0700 [-] --> test_paisley.ConnectedCouchDBTestCase.test_createDB <--
+2010-12-28 13:00:23-0700 [-] twisted.web.server.Site starting on 61522
+2010-12-28 13:00:23-0700 [-] Starting factory <twisted.web.server.Site instance at 0x1e2bfd0>
+2010-12-28 13:00:23-0700 [-] Starting factory <HTTPClientFactory: http://127.0.0.1:61522/_all_dbs>
+2010-12-28 13:00:23-0700 [HTTPChannel,0,127.0.0.1] 127.0.0.1 - - [28/Dec/2010:20:00:23 +0000] "GET /_all_dbs HTTP/1.0" 200 8 "-" "Twisted PageGetter"
+2010-12-28 13:00:23-0700 [-] (TCP Port 61522 Closed)
+2010-12-28 13:00:23-0700 [-] Stopping factory <twisted.web.server.Site instance at 0x1e2bfd0>
+2010-12-28 13:00:23-0700 [HTTPPageGetter,client] Stopping factory <HTTPClientFactory: http://127.0.0.1:61522/_all_dbs>
+2010-12-28 13:00:23-0700 [-] Main loop terminated.
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_addAttachments <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_addViews <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_auth_init <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_bindToDB <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_createDB <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_delete <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_deleteDB <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_deleteDoc <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_escapeId <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_get <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_infoDB <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_listDB <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_listDoc <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_listDocCount <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_listDocMultipleArguments <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_listDocReversed <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_listDocStartKey <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_openDoc <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_openDocAtRevision <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_openDocAttachment <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_openDocWithRevisionHistory <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_openView <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_openViewWithKeysQuery <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_openViewWithQuery <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_post <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_put <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_saveDocWithDocId <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_saveDocWithoutDocId <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_saveStructuredDoc <--
+2010-12-28 13:00:23-0700 [-] --> test_paisley.CouchDBTestCase.test_tempView <--

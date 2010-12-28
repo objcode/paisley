@@ -11,11 +11,11 @@ def main():
         version="0.1",
         description=("Paisley is a CouchDB client written in Python to be used "
                      "within a Twisted application."),
-        author="Paisley Developpers",
+        author="Paisley Developers",
         author_email="",
         license="MIT",
         url="http://github.com/smcq/paisley",
-        py_modules=["paisley", "test_paisley"],
+        py_modules=["paisley", "paisley.test_paisley"],
     )
 
 if __name__ == "__main__":
