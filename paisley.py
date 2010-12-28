@@ -10,7 +10,7 @@ try:
     import json
 except ImportError:
     import simplejson as json
-from urllib import urlencode
+from urllib import urlencode, quote
 
 from twisted.web.client import HTTPClientFactory
 
@@ -167,7 +167,7 @@ class CouchDB(object):
         """
         # Responses: {u'_rev': -1825937535, u'_id': u'mydoc', ...}
         # 404 Object Not Found
-        uri = "/%s/%s" % (dbName, docId)
+        uri = "/%s/%s" % (dbName, quote(docId))
         if revision is not None:
             uri += "?%s" % (urlencode({"rev": revision}),)
         elif full:
@@ -214,7 +214,7 @@ class CouchDB(object):
         if not isinstance(body, (str, unicode)):
             body = json.dumps(body)
         if docId is not None:
-            d = self.put("/%s/%s" % (dbName, docId), body)
+            d = self.put("/%s/%s" % (dbName, quote(docId)), body)
         else:
             d = self.post("/%s/" % (dbName,), body)
         return d.addCallback(self.parseResult)
@@ -228,7 +228,7 @@ class CouchDB(object):
         # 500 Internal Server Error
         return self.delete("/%s/%s?%s" % (
                 dbName,
-                docId,
+                quote(docId),
                 urlencode({'rev': revision}))
             ).addCallback(self.parseResult)
 
@@ -239,7 +239,7 @@ class CouchDB(object):
         """
         Open a view of a document in a given database.
         """
-        uri = "/%s/_design/%s/_view/%s" % (dbName, docId, viewId)
+        uri = "/%s/_design/%s/_view/%s" % (dbName, quote(docId), viewId)
 
         for arg in kwargs.keys():
             kwargs[arg] = json.dumps(kwargs[arg])
