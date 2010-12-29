@@ -10,9 +10,22 @@ try:
     import json
 except ImportError:
     import simplejson as json
-from urllib import urlencode, quote
 
-from twisted.web.client import HTTPClientFactory
+import codecs
+from StringIO import StringIO
+from urllib import urlencode, quote
+from zope.interface import implements
+
+from twisted.internet import reactor
+from twisted.web._newclient import ResponseDone
+from twisted.web import error as tw_error
+from twisted.web.client import Agent
+from twisted.web.http import PotentialDataLoss
+from twisted.web.http_headers import Headers
+from twisted.web.iweb import IBodyProducer
+
+from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.protocol import Protocol
 
 try:
     from base64 import b64encode
@@ -43,6 +56,44 @@ except ImportError:
 SOCK_TIMEOUT = 300
 
 
+class StringProducer(object):
+    """
+    Body producer for t.w.c.Agent
+    """
+    implements(IBodyProducer)
+
+    def __init__(self, body):
+        self.body = body
+        self.length = len(body)
+
+    def startProducing(self, consumer):
+        return defer.maybeDeferred(consumer.write(self.body))
+
+    def pauseProducing(self):
+        pass
+
+    def stopProducing(self):
+        pass
+
+class ResponseReceiver(Protocol):
+    """
+    Assembles HTTP response from return stream.
+    """
+    
+    def __init__(self, deferred):
+        self.writer = codecs.getwriter("utf_8")(StringIO())
+        self.deferred = deferred
+    
+    def dataReceived(self, bytes):
+        self.writer.write(bytes)
+    
+    def connectionLost(self, reason):
+        if reason.check(ResponseDone) or reason.check(PotentialDataLoss):
+            self.deferred.callback(self.writer.getvalue())
+        else:
+            self.deferred.errback(reason)
+    
+
 class CouchDB(object):
     """
     CouchDB client: hold methods for accessing a couchDB.
@@ -62,6 +113,7 @@ class CouchDB(object):
             this one by default.
         @type dbName: C{str}
         """
+        self.client = Agent(reactor)
         self.host = host
         self.port = int(port)
         self.username = username
@@ -288,18 +340,46 @@ class CouchDB(object):
         """
         C{getPage}-like.
         """
+        
+        def cb_recv_resp(response):
+            d_resp_recvd = Deferred()
+            response.deliverBody(ResponseReceiver(d_resp_recvd))
+            return d_resp_recvd.addCallback(cb_process_resp, response)
+        
+        def cb_process_resp(body, response):
+            # Emulate HTTPClientFactory and raise t.w.e.Error
+            # and PageRedirect if we have errors.
+            if response.code > 299 and response.code < 400:
+                raise tw_error.PageRedirect(response.code, body)
+            elif response.code > 399:
+                raise tw_error.Error(response.code, body)
+            
+            return body
+        
         url = str(self.url_template % (uri,))
         kwargs["headers"] = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
+            "Accept": ["application/json"],
+            "Content-Type": ["application/json"],
         }
-        if self.username:
-            kwargs["headers"]["Authorization"] = "Basic %s" % b64encode("%s:%s" % (self.username, self.password))
+        if not kwargs.has_key("method"):
+            kwargs["method"] == "GET"
         
-        factory = HTTPClientFactory(url, **kwargs)
-        from twisted.internet import reactor
-        reactor.connectTCP(self.host, self.port, factory, timeout=SOCK_TIMEOUT)
-        return factory.deferred
+        if self.username:
+            kwargs["headers"]["Authorization"] = ["Basic %s" % b64encode("%s:%s" % (self.username, self.password))]
+        
+        if kwargs.has_key("postdata"):
+            body = StringProducer(kwargs["postdata"])
+        else:
+            body = None
+        
+        d = self.client.request(kwargs["method"],
+                                url,
+                                Headers(kwargs["headers"]),
+                                body)
+        
+        d.addCallback(cb_recv_resp)
+        
+        return d
 
 
     def get(self, uri):
