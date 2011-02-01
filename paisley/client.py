@@ -67,7 +67,7 @@ class StringProducer(object):
         self.length = len(body)
 
     def startProducing(self, consumer):
-        return defer.maybeDeferred(consumer.write(self.body))
+        return maybeDeferred(consumer.write, self.body)
 
     def pauseProducing(self):
         pass
@@ -357,10 +357,13 @@ class CouchDB(object):
             return body
         
         url = str(self.url_template % (uri,))
-        kwargs["headers"] = {
-            "Accept": ["application/json"],
-            "Content-Type": ["application/json"],
-        }
+        
+        if not kwargs.has_key("headers"):
+            kwargs["headers"] = {}
+        
+        kwargs["headers"]["Accept"] = ["application/json"]
+        kwargs["headers"]["Content-Type"] = ["application/json"]
+        
         if not kwargs.has_key("method"):
             kwargs["method"] == "GET"
         
