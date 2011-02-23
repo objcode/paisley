@@ -225,7 +225,7 @@ class CouchDB(object):
         elif full:
             uri += "?%s" % (urlencode({"full": "true"}),)
         elif attachment:
-            uri += "?%s" % (urlencode({"attachment": attachment}),)
+            uri += "/%s" % quote(attachment)
             # No parsing
             return  self.get(uri)
         return self.get(uri

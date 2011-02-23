@@ -246,7 +246,7 @@ class CouchDBTestCase(TestCase):
         Test openDoc for an attachment.
         """
         d = self.client.openDoc("mydb", "mydoc", attachment="bar")
-        self.assertEquals(self.client.uri, "/mydb/mydoc?attachment=bar")
+        self.assertEquals(self.client.uri, "/mydb/mydoc/bar")
         self.assertEquals(self.client.kwargs["method"], "GET")
         # Data is transfered without parsing
         d.callback("test")
