@@ -8,7 +8,7 @@ from distutils.core import setup
 def main():
     setup(
         name="paisley",
-        version="0.1",
+        version="0.3",
         description=("Paisley is a CouchDB client written in Python to be used "
                      "within a Twisted application."),
         author="Paisley Developers",

@@ -1,9 +1,15 @@
 Implements the CouchDB API for twisted.
 
-## Release Notes (git trunk...will be 0.3)
+## Release Notes v0.3
+
+_Enhancements_
 
 * Added CouchDB authentication support (supply username and password args when instantiating)
+* Re-factored underlying HTTP transport to use Twisted Web Agent (will allow connection pooling in the future).
 * Re-factored code into formal Python package. API compatible with old package layout.
+
+_Bug Fixes_
+* Fixed attachment handling so it returns the attachment instead of the owning document (dwb)
 
 ## Release Notes (0.1->0.2)
 
