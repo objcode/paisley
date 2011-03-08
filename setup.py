@@ -15,7 +15,7 @@ def main():
         author_email="",
         license="MIT",
         url="http://github.com/smcq/paisley",
-        donwload_url="http://github.com/smcq/paisley/zipball/v0.3"
+        donwload_url="http://github.com/smcq/paisley/zipball/v0.3",
         py_modules=["paisley", "paisley.client", "paisley.test_paisley"],
     )
 
