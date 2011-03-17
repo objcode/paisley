@@ -320,7 +320,7 @@ class CouchDBTestCase(TestCase):
         Test openView.
         """
         d = self.client.openView("mydb", "viewdoc", "myview")
-        self.assertEquals(self.client.uri, "/mydb/_design/viewdoc/_view/myview")
+        self.assertEquals(self.client.uri, "/mydb/_design/viewdoc/_view/myview?")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
@@ -338,6 +338,7 @@ class CouchDBTestCase(TestCase):
         self.failUnless(
             self.client.uri.startswith("/mydb/_design/viewdoc/_view/myview"))
         query = cgi.parse_qs(self.client.uri.split('?', 1)[-1])
+        # don't remove the double quotes, the test is correct and required
         self.assertEquals(query["startkey"], ['"foo"'])
         self.assertEquals(query["count"], ["10"])
         return self._checkParseDeferred(d)

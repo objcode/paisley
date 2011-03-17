@@ -325,16 +325,18 @@ class CouchDB(object):
         """
         Open a view of a document in a given database.
         """
-        uri = "/%s/_design/%s/_view/%s?" % (dbName, quote(docId), viewId)
-        def buildUri(uri, kwargs):         
-            for k in kwargs:
-                uri += quote(k + "=" + json.dumps(kwargs[k])) + '&'
-            return uri
+        def buildUri(dbName=dbName, docId=docId, viewId=viewId, kwargs=kwargs):
+            return "/%s/_design/%s/_view/%s?%s" % (
+                dbName, quote(docId), viewId, urlencode(kwargs))            
+
+        for k, v in kwargs.iteritems():
+            kwargs[k] = json.dumps(v) #couchdb requires this
+
         if "keys" in kwargs:
-            body = json.dumps({'keys': kwargs.pop("keys")})
-            return self.post(buildUri(uri, kwargs), body=body, descr='openView')
-        else:                     
-            return self.get(buildUri(uri, kwargs), descr='openView').addCallback(self.parseResult)        
+            body = {"keys": kwargs.pop("keys")}
+            return self.post(buildUri(), body=body, descr='openView')
+        else:
+            return self.get(buildUri(), descr='openView').addCallback(self.parseResult)        
 
 
     def addViews(self, document, views):
@@ -424,8 +426,8 @@ class CouchDB(object):
         """
         Execute a C{POST} of C{body} at C{uri}.
         """
-        self.log.debug("[%s:%s%s] POST %s",
-                      self.host, self.port, short_print(uri), descr)
+        self.log.debug("[%s:%s%s] POST %s: %s",
+                      self.host, self.port, short_print(uri), descr, short_print(repr(body)))
         return self._getPage(uri, method="POST", postdata=body)
 
 
@@ -433,8 +435,8 @@ class CouchDB(object):
         """
         Execute a C{PUT} of C{body} at C{uri}.
         """
-        self.log.debug("[%s:%s%s] PUT %s",
-                       self.host, self.port, short_print(uri), descr)
+        self.log.debug("[%s:%s%s] PUT %s: %s",
+                       self.host, self.port, short_print(uri), descr, short_print(repr(body)))
         return self._getPage(uri, method="PUT", postdata=body)
 
 
