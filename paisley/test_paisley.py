@@ -20,7 +20,6 @@ from twisted.web import resource, server
 import paisley
 
 
-
 class TestableCouchDB(paisley.CouchDB):
     """
     A couchdb client that can be tested: override the getPage method.
@@ -60,6 +59,18 @@ class CouchDBTestCase(TestCase):
         Create a fake client to be used in the tests.
         """
         self.client = TestableCouchDB("localhost")
+
+    def test_disable_log(self):
+        client = TestableCouchDB('localhost', disable_log=True)
+        import logging
+        log = logging.getLogger('paisley')
+        self.assertNotEqual(log, client.log)
+
+    def test_enable_log_and_defaults(self):
+        client = TestableCouchDB('localhost')
+        import logging
+        log = logging.getLogger('paisley')
+        self.assertEqual(log, client.log)
     
     def test_auth_init(self):
         """

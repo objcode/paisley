@@ -12,6 +12,9 @@ except ImportError:
     import simplejson as json
 
 import codecs
+import logging
+import new
+            
 from StringIO import StringIO
 from urllib import urlencode, quote
 from zope.interface import implements
@@ -35,6 +38,16 @@ except ImportError:
     def b64encode(s):
         return "".join(base64.encodestring(s).split("\n"))
 
+def short_print(body, trim=255):
+    # don't go nuts on possibly huge log entries
+    # since we're a library we should try to avoid calling this and instead
+    # write awesome logs
+    if not isinstance(body, basestring):
+        body = str(body)
+    if len(body) < trim:
+        return body.replace('\n', '\\n')
+    else:
+        return body[:trim].replace('\n', '\\n') + '...'
 
 try:
     from functools import partial
@@ -99,7 +112,7 @@ class CouchDB(object):
     CouchDB client: hold methods for accessing a couchDB.
     """
 
-    def __init__(self, host, port=5984, dbName=None, username=None, password=None):
+    def __init__(self, host, port=5984, dbName=None, username=None, password=None, disable_log=False):
         """
         Initialize the client for given host.
 
@@ -121,6 +134,27 @@ class CouchDB(object):
         self.url_template = "http://%s:%s%%s" % (self.host, self.port)
         if dbName is not None:
             self.bindToDB(dbName)
+        
+        if disable_log:
+            # since this is the db layer, and we generate a lot of logs,
+            # let people disable them completely if they want to.
+            levels = ['trace', 'debug', 'info', 'warn', 'error', 'exception']
+            class FakeLog(object):
+                pass
+            def nullfn(self, *a, **k):
+                pass
+            self.log = FakeLog()
+            for level in levels:
+                self.log.__dict__[level] = new.instancemethod(nullfn, self.log)
+        else:
+            self.log = logging.getLogger('paisley')
+
+
+        self.log.debug("[%s%s:%s/%s] init new db clien", 
+                       '%s@' % (username,) if username else '',
+                       host, 
+                       port, 
+                       dbName if dbName else '')
 
 
     def parseResult(self, result):
@@ -149,7 +183,7 @@ class CouchDB(object):
         Creates a new database on the server.
         """
         # Responses: {u'ok': True}, 409 Conflict, 500 Internal Server Error
-        return self.put("/%s/" % (dbName,), ""
+        return self.put("/%s/" % (dbName,), "", descr='CreateDB'
             ).addCallback(self.parseResult)
 
 
@@ -167,7 +201,7 @@ class CouchDB(object):
         List the databases on the server.
         """
         # Responses: list of db names
-        return self.get("/_all_dbs").addCallback(self.parseResult)
+        return self.get("/_all_dbs", descr='listDB').addCallback(self.parseResult)
 
 
     def infoDB(self, dbName):
@@ -176,7 +210,7 @@ class CouchDB(object):
         """
         # Responses: {u'update_seq': 0, u'db_name': u'mydb', u'doc_count': 0}
         # 404 Object Not Found
-        return self.get("/%s/" % (dbName,)
+        return self.get("/%s/" % (dbName,), descr='infoDB'
             ).addCallback(self.parseResult)
 
 
@@ -198,7 +232,7 @@ class CouchDB(object):
             args["count"] = int(count)
         if args:
             uri += "?%s" % (urlencode(args),)
-        return self.get(uri
+        return self.get(uri, descr='listDoc'
             ).addCallback(self.parseResult)
 
 
@@ -227,8 +261,8 @@ class CouchDB(object):
         elif attachment:
             uri += "/%s" % quote(attachment)
             # No parsing
-            return  self.get(uri)
-        return self.get(uri
+            return  self.get(uri, descr='openDoc')
+        return self.get(uri, descr='openDoc'
             ).addCallback(self.parseResult)
 
 
@@ -266,9 +300,9 @@ class CouchDB(object):
         if not isinstance(body, (str, unicode)):
             body = json.dumps(body)
         if docId is not None:
-            d = self.put("/%s/%s" % (dbName, quote(docId)), body)
+            d = self.put("/%s/%s" % (dbName, quote(docId)), body, descr='saveDoc')
         else:
-            d = self.post("/%s/" % (dbName,), body)
+            d = self.post("/%s/" % (dbName,), body, descr='saveDoc')
         return d.addCallback(self.parseResult)
 
 
@@ -293,15 +327,14 @@ class CouchDB(object):
         """
         uri = "/%s/_design/%s/_view/%s?" % (dbName, quote(docId), viewId)
         def buildUri(uri, kwargs):         
-            print kwargs
             for k in kwargs:
                 uri += quote(k + "=" + json.dumps(kwargs[k])) + '&'
             return uri
         if "keys" in kwargs:
             body = json.dumps({'keys': kwargs.pop("keys")})
-            return self.post(buildUri(uri, kwargs), body=body)
+            return self.post(buildUri(uri, kwargs), body=body, descr='openView')
         else:                     
-            return self.get(buildUri(uri, kwargs)).addCallback(self.parseResult)        
+            return self.get(buildUri(uri, kwargs), descr='openView').addCallback(self.parseResult)        
 
 
     def addViews(self, document, views):
@@ -323,7 +356,7 @@ class CouchDB(object):
         """
         Make a temporary view on the server.
         """
-        d = self.post("/%s/_temp_view" % (dbName,), view)
+        d = self.post("/%s/_temp_view" % (dbName,), view, descr='tempView')
         return d.addCallback(self.parseResult)
 
 
@@ -378,29 +411,37 @@ class CouchDB(object):
         return d
 
 
-    def get(self, uri):
+    def get(self, uri, descr=''):
         """
         Execute a C{GET} at C{uri}.
         """
+        self.log.debug("[%s:%s%s] GET %s",
+                       self.host, self.port, short_print(uri), descr)
         return self._getPage(uri, method="GET")
 
 
-    def post(self, uri, body):
+    def post(self, uri, body, descr=''):
         """
         Execute a C{POST} of C{body} at C{uri}.
         """
+        self.log.debug("[%s:%s%s] POST %s",
+                      self.host, self.port, short_print(uri), descr)
         return self._getPage(uri, method="POST", postdata=body)
 
 
-    def put(self, uri, body):
+    def put(self, uri, body, descr=''):
         """
         Execute a C{PUT} of C{body} at C{uri}.
         """
+        self.log.debug("[%s:%s%s] PUT %s",
+                       self.host, self.port, short_print(uri), descr)
         return self._getPage(uri, method="PUT", postdata=body)
 
 
-    def delete(self, uri):
+    def delete(self, uri, descr=''):
         """
         Execute a C{DELETE} at C{uri}.
         """
+        self.log.debug("[%s:%s%s] DELETE %s",
+                       self.host, self.port, short_print(uri), descr)
         return self._getPage(uri, method="DELETE")
