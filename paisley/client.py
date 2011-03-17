@@ -7,9 +7,9 @@ CouchDB client.
 """
 
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 import codecs
 import logging
