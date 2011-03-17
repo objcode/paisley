@@ -150,7 +150,7 @@ class CouchDB(object):
             self.log = logging.getLogger('paisley')
 
 
-        self.log.debug("[%s%s:%s/%s] init new db clien", 
+        self.log.debug("[%s%s:%s/%s] init new db client", 
                        '%s@' % (username,) if username else '',
                        host, 
                        port, 
