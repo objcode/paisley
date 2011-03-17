@@ -291,24 +291,17 @@ class CouchDB(object):
         """
         Open a view of a document in a given database.
         """
-        uri = "/%s/_design/%s/_view/%s" % (dbName, quote(docId), viewId)
-
-        for arg in kwargs.keys():
-            kwargs[arg] = json.dumps(kwargs[arg])
-
-        if not kwargs:
-            return self.get(uri).addCallback(self.parseResult)
-        elif 'keys' in kwargs:
-            #couchdb is crazy and requires that keys be passed in a post body
-            options = kwargs.copy()
-            keys = {'keys': options.pop('keys')}
-            if options:
-                uri += "?%s" % (urlencode(options),)
-            return self.post(uri, body=keys)
-        elif kwargs:
-            # if not keys we just encode everything in the url
-            uri += "?%s" % (urlencode(kwargs),)
-            return self.get(uri).addCallback(self.parseResult)
+        uri = "/%s/_design/%s/_view/%s?" % (dbName, quote(docId), viewId)
+        def buildUri(uri, kwargs):         
+            print kwargs
+            for k in kwargs:
+                uri += quote(k + "=" + json.dumps(kwargs[k])) + '&'
+            return uri
+        if "keys" in kwargs:
+            body = json.dumps({'keys': kwargs.pop("keys")})
+            return self.post(buildUri(uri, kwargs), body=body)
+        else:                     
+            return self.get(buildUri(uri, kwargs)).addCallback(self.parseResult)        
 
 
     def addViews(self, document, views):
