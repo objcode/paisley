@@ -3,6 +3,7 @@
 # See LICENSE for details.
 
 from distutils.core import setup
+import setuptools
 
 
 def main():
