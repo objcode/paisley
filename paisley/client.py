@@ -325,6 +325,8 @@ class CouchDB(object):
         """
         Open a view of a document in a given database.
         """
+        # Responses: 
+        # 500 Internal Server Error (illegal database name)
         def buildUri(dbName=dbName, docId=docId, viewId=viewId, kwargs=kwargs):
             return "/%s/_design/%s/_view/%s?%s" % (
                 dbName, quote(docId), viewId, urlencode(kwargs))            
