@@ -182,7 +182,8 @@ class CouchDB(object):
         """
         Creates a new database on the server.
         """
-        # Responses: {u'ok': True}, 409 Conflict, 500 Internal Server Error
+        # Responses: {u'ok': True}, 409 Conflict, 500 Internal Server Error,
+        # 401 Unauthorized
         return self.put("/%s/" % (dbName,), "", descr='CreateDB'
             ).addCallback(self.parseResult)
 
@@ -296,6 +297,7 @@ class CouchDB(object):
         @type docId: C{str}
         """
         # Responses: {u'_rev': 1175338395, u'_id': u'mydoc', u'ok': True}
+        # 404 Object not found (if database does not exist)
         # 409 Conflict, 500 Internal Server Error
         if not isinstance(body, (str, unicode)):
             body = json.dumps(body)

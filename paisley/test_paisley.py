@@ -341,7 +341,10 @@ class CouchDBTestCase(TestCase):
         self.failUnless(
             self.client.uri.startswith("/mydb/_design/viewdoc/_view/myview"))
         query = cgi.parse_qs(self.client.uri.split('?', 1)[-1])
-        # don't remove the double quotes, the test is correct and required
+        # couchdb expects valid JSON as the query values, so a string of foo
+        # should be serialized as "foo" explicitly
+        # e.g., ?startkey=A would return
+        # {"error":"bad_request","reason":"invalid UTF-8 JSON"}
         self.assertEquals(query["startkey"], ['"foo"'])
         self.assertEquals(query["count"], ["10"])
         return self._checkParseDeferred(d)
