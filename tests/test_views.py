@@ -22,6 +22,7 @@ class StubCouch(object):
         return succeed(self._views[viewId])
 
 
+# an object for a view result not including docs
 class Tag(object):
     def fromDict(self, dictionary):
         self.name = dictionary['key']
@@ -31,7 +32,7 @@ class Tag(object):
 class ViewTests(TestCase):
     def test_queryView(self):
         """
-        Test that a querying a view gives us an iterable of our user defined
+        Test that querying a view gives us an iterable of our user defined
         objects.
         """
         fc = StubCouch(views={'all_tags': {
