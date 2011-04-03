@@ -12,6 +12,8 @@ except:
 
 import cgi
 
+from twisted.internet import defer
+
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
@@ -19,6 +21,7 @@ from twisted.web import resource, server
 
 import paisley
 
+from paisley import test_util
 
 class TestableCouchDB(paisley.CouchDB):
     """
@@ -449,3 +452,28 @@ class ConnectedCouchDBTestCase(TestCase):
         d.addCallback(cb)
         return d
 
+class RealCouchDBTestCase(test_util.CouchDBTestCase):
+    def testDB(self):
+        d = defer.Deferred()
+        d.addCallback(lambda _: self.db.createDB('test'))
+        def createCb(result):
+            self.assertEquals(result, {'ok': True})
+        d.addCallback(createCb)
+        d.addCallback(lambda _: self.db.listDB())
+        def listCb(result):
+            self.assertEquals(len(result), 2)
+            self.failUnless('test' in result)
+            self.failUnless('_users' in result)
+        d.addCallback(listCb)
+        d.addCallback(lambda _: self.db.deleteDB('test'))
+        def deleteCb(result):
+            self.assertEquals(result, {'ok': True})
+        d.addCallback(deleteCb)
+        d.addCallback(lambda _: self.db.listDB())
+        def listCbAgain(result):
+            self.assertEquals(len(result), 1)
+            self.failUnless('_users' in result)
+        d.addCallback(listCbAgain)
+
+        d.callback(None)
+        return d
