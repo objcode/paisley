@@ -42,7 +42,7 @@ class CouchDBTestCase(unittest.TestCase):
         os.mkdir(os.path.join(self.tempdir, 'lib'))
         os.mkdir(os.path.join(self.tempdir, 'log'))
 
-        args = ['couchdb', '-n', '-a', confPath]
+        args = ['couchdb', '-a', confPath]
         null = open('/dev/null', 'w')
         process = subprocess.Popen(args, env=None, stdout=null, stderr=null)
         self._pid = process.pid
