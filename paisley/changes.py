@@ -2,6 +2,8 @@
 # -*- Mode: Python -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
+from urllib import urlencode
+
 from twisted.internet import reactor
 from twisted.web import client
 from twisted.protocols import basic
@@ -44,24 +46,31 @@ class ChangeNotifier:
     def addListener(self, listener):
         self._listeners.append(listener)
 
-    def start(self):
+    def start(self, *args, **kwargs):
         """
         Start listening and notifying of changes.
         Separated from __init__ so you can add caches and listeners.
 
-        @returns: Deferred firing the most recent change id.
+        By default, I will start listening from the most recent change.
         """
+        assert 'feed' not in kwargs, \
+            "ChangeNotifier always listens continuously."
+
         d = self._db.infoDB(self._dbName)
+
         def infoDBCb(info):
-            self._since = info['update_seq']
+            kwargs['feed'] = 'continuous'
+            kwargs['since'] = info['update_seq']
+            # FIXME: str should probably be unicode, as dbName can be
             url = str(self._db.url_template %
-                '/%s/_changes?feed=continuous&since=%d' % (
-                    self._dbName, self._since))
+                '/%s/_changes?%s' % (self._dbName, urlencode(kwargs)))
             return self._db.client.request('GET', url)
         d.addCallback(infoDBCb)
+
         def requestCb(response):
             response.deliverBody(self._prot)
         d.addCallback(requestCb)
+
         def returnCb(_):
             return self._since
         d.addCallback(returnCb)
