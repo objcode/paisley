@@ -10,8 +10,10 @@ from twisted.protocols import basic
 
 from paisley.client import json
 
+
 class ChangeReceiver(basic.LineReceiver):
-    # figured out by checking the last two characters on actually received lines
+    # figured out by checking the last two characters on actually received
+    # lines
     delimiter = '\n'
 
     def __init__(self, notifier):
@@ -29,7 +31,9 @@ class ChangeReceiver(basic.LineReceiver):
 
         self._notifier.changed(change)
 
+
 class ChangeNotifier:
+
     def __init__(self, db, dbName):
         self._db = db
         self._dbName = dbName
@@ -78,6 +82,7 @@ class ChangeNotifier:
         return d
 
     # called by receiver
+
     def changed(self, change):
         for cache in self._caches:
             cache.delete(change['id'])
