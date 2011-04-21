@@ -2,6 +2,7 @@
 # -*- Mode: Python -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
+import os
 
 from twisted.internet import defer, reactor, error
 from twisted.trial import unittest
@@ -9,19 +10,6 @@ from twisted.trial import unittest
 from paisley import client, changes
 
 from paisley import test_util
-
-# ChangeNotifier test lines
-
-TEST_CHANGES = """
-{"seq":3934,"id":"cc4fadc922f11ffb5e358d5da2760de2",""" + \
-""""changes":[{"rev":"1-1e379f46917bc2fc9b9562a58afde75a"}]}
-{"changes": [{"rev": "12-7bfdb7016aa8aa0dd0279d3324b524d1"}], """ + \
-""""id": "_design/couchdb", "seq": 5823}
-{"last_seq":3934}
-{"deleted": true, """ + \
-""""changes": [{"rev": "2-5e8bd6dae4307ca6f8fcf8afa53e6bc4"}], """ + \
-""""id": "27e74762ad0e64d4094f6feea800a826", "seq": 34}
-"""
 
 
 class FakeNotifier(object):
@@ -39,7 +27,13 @@ class TestStubChangeReceiver(unittest.TestCase):
         notifier = FakeNotifier()
         receiver = changes.ChangeReceiver(notifier)
 
-        for line in TEST_CHANGES.split("\n"):
+        # ChangeNotifier test lines
+        path = os.path.join(os.path.dirname(__file__),
+            'test.changes')
+        handle = open(path)
+        text = handle.read()
+
+        for line in text.split("\n"):
             receiver.lineReceived(line)
 
         self.assertEquals(len(notifier.changes), 3)
