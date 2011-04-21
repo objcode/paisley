@@ -4,7 +4,7 @@
 
 from urllib import urlencode
 
-from twisted.internet import reactor
+from twisted.internet import error
 from twisted.web import client
 from twisted.protocols import basic
 
@@ -31,8 +31,38 @@ class ChangeReceiver(basic.LineReceiver):
 
         self._notifier.changed(change)
 
+    def connectionLost(self, reason):
+        self._notifier.connectionLost(reason)
 
-class ChangeNotifier:
+
+class ChangeListener:
+    """
+    I am an interface for receiving changes from a L{ChangeNotifier}.
+    """
+
+    def changed(self, change):
+        """
+        @type  change: dict of str -> str
+
+        The given change was received.
+        Only changes that contain an id get received.
+
+        A change is a dictionary with:
+        - id:  document id
+        - seq: sequence number of change
+        - changes: list of dict containing document revisions
+        - deleted (optional)
+        """
+        pass
+
+    def connectionLost(self, reason):
+        """
+        @type  reason: L{twisted.python.failure.Failure}
+        """
+        pass
+
+
+class ChangeNotifier(object):
 
     def __init__(self, db, dbName):
         self._db = db
@@ -43,6 +73,8 @@ class ChangeNotifier:
         self._prot = ChangeReceiver(self)
 
         self._since = None
+
+        self._stopped = None
 
     def addCache(self, cache):
         self._caches.append(cache)
@@ -81,6 +113,15 @@ class ChangeNotifier:
 
         return d
 
+    def stop(self):
+        # FIXME: this should produce a clean stop, but it does not.
+        # From http://twistedmatrix.com/documents/current/web/howto/client.html
+        # "If it is decided that the rest of the response body is not desired,
+        # stopProducing can be used to stop delivery permanently; after this,
+        # the protocol's connectionLost method will be called."
+        self._stopped = True
+        self._prot.stopProducing()
+
     # called by receiver
 
     def changed(self, change):
@@ -89,3 +130,21 @@ class ChangeNotifier:
 
         for listener in self._listeners:
             listener.changed(change)
+
+    def connectionLost(self, reason):
+        # even if we asked to stop, we still get
+        # a twisted.web._newclient.ResponseFailed containing
+        #   twisted.internet.error.ConnectionDone
+        # and
+        #   twisted.web.http._DataLoss
+        # If we actually asked to stop, just pass through only ConnectionDone
+
+        # FIXME: poking at internals to get failures ? Yuck!
+        from twisted.web import _newclient
+        if reason.check(_newclient.ResponseFailed):
+            if reason.value.reasons[0].check(error.ConnectionDone) and \
+                self._stopped:
+                reason = reason.value.reasons[0]
+
+        for listener in self._listeners:
+            listener.connectionLost(reason)

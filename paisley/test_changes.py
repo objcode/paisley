@@ -3,7 +3,7 @@
 # vi:si:et:sw=4:sts=4:ts=4
 
 
-from twisted.internet import defer
+from twisted.internet import defer, reactor, error
 from twisted.trial import unittest
 
 from paisley import client, changes
@@ -47,16 +47,31 @@ class TestStubChangeReceiver(unittest.TestCase):
         self.assertEquals(notifier.changes[2]["deleted"], True)
 
 
-class ChangeReceiverTestCase(test_util.CouchDBTestCase):
-
-    lastChange = None
-    _deferred = None
+class BaseTestCase(test_util.CouchDBTestCase):
+    tearing = False # set to True during teardown so we can assert
 
     def setUp(self):
         test_util.CouchDBTestCase.setUp(self)
 
+    def tearDown(self):
+        self.tearing = True
 
-    ### ChangeNotifier listener interface
+    def waitForNextCycle(self):
+        # Wait for the reactor to cycle.
+        # Useful after telling the notifier to stop, since the actual
+        # shutdown is triggered on one of the next cycles
+        # 0 is not enough though
+        d = defer.Deferred()
+        reactor.callLater(0.01, d.callback, None)
+        return d
+
+
+class ChangeReceiverTestCase(BaseTestCase, changes.ChangeListener):
+
+    lastChange = None
+    _deferred = None
+
+    ### ChangeListener interface
 
     def changed(self, change):
         self.lastChange = change
@@ -66,6 +81,13 @@ class ChangeReceiverTestCase(test_util.CouchDBTestCase):
             d = self._deferred
             self._deferred = None
             d.callback(change)
+
+    def connectionLost(self, reason):
+        # make sure we lost the connection cleanly
+        self.failIf(self.tearing,
+            'connectionLost should be called before teardown '
+            'through notifier.stop')
+        self.failUnless(reason.check(error.ConnectionDone))
 
     ### method for subclasses
 
@@ -79,7 +101,6 @@ class ListenerChangeReceiverTestCase(ChangeReceiverTestCase):
     def setUp(self):
         ChangeReceiverTestCase.setUp(self)
 
-        self.db = client.CouchDB('localhost', self.port)
         return self.db.createDB('test')
 
     def testChanges(self):
@@ -128,6 +149,8 @@ class ListenerChangeReceiverTestCase(ChangeReceiverTestCase):
             return dl
         d.addCallback(update)
 
+        d.addCallback(lambda _: notifier.stop())
+        d.addCallback(lambda _: self.waitForNextCycle())
         return d
 
     def testChangesFiltered(self):
@@ -246,6 +269,40 @@ function(doc, req) {
 
             return dl
         d.addCallback(createTwoAndUpdateOne)
+        d.addCallback(lambda _: notifier.stop())
+        d.addCallback(lambda _: self.waitForNextCycle())
 
         d.callback(None)
         return d
+
+
+class ConnectionLostTestCase(BaseTestCase, changes.ChangeListener):
+
+    def setUp(self):
+        BaseTestCase.setUp(self)
+
+        notifier = changes.ChangeNotifier(self.db, 'test')
+        notifier.addListener(self)
+
+        d = self.db.createDB('test')
+        d.addCallback(lambda _: notifier.start())
+        return d
+
+    ### ChangeListener interface
+
+    def changed(self, change):
+        pass
+
+    def connectionLost(self, reason):
+        # make sure we lost the connection before teardown
+        self.failIf(self.tearing,
+            'connectionLost should be called before teardown')
+
+        self.failIf(reason.check(error.ConnectionDone))
+
+        from twisted.web import _newclient
+        self.failUnless(reason.check(_newclient.ResponseFailed))
+
+    def testKill(self):
+        self.wrapper.process.terminate()
+        return self.waitForNextCycle()
