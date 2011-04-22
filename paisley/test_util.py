@@ -7,22 +7,25 @@ import os
 import tempfile
 import subprocess
 
-from twisted.internet import defer
 from twisted.trial import unittest
 
 from paisley import client
 
 
-class CouchDBTestCase(unittest.TestCase):
+class CouchDBWrapper(object):
     """
-    I am a TestCase base class for tests against a real CouchDB server.
-    I start a server during setup and stop it during teardown.
+    I wrap an external CouchDB instance started and stopped for testing.
 
-    @ivar  db: the CouchDB client
-    @type  db: L{paisley.client.CouchDB}
+    @ivar tempdir: the temporary directory used for logging and running
+    @ivar process: the CouchDB process
+    @type process: L{subprocess.Popen}
+    @ivar port:    the randomly assigned port on which CouchDB listens
+    @type port:    str
+    @ivar db:      the CouchDB client to this server
+    @type db:      L{client.CouchDB}
     """
 
-    def setUp(self):
+    def start(self):
         self.tempdir = tempfile.mkdtemp(suffix='.paisley.test')
 
         path = os.path.join(os.path.dirname(__file__),
@@ -42,10 +45,10 @@ class CouchDBTestCase(unittest.TestCase):
         os.mkdir(os.path.join(self.tempdir, 'lib'))
         os.mkdir(os.path.join(self.tempdir, 'log'))
 
-        args = ['couchdb', '-n', '-a', confPath]
+        args = ['couchdb', '-a', confPath]
         null = open('/dev/null', 'w')
-        process = subprocess.Popen(args, env=None, stdout=null, stderr=null)
-        self._pid = process.pid
+        self.process = subprocess.Popen(
+            args, env=None, stdout=null, stderr=null)
 
         # find port
         logPath = os.path.join(self.tempdir, 'log', 'couch.log')
@@ -64,12 +67,28 @@ class CouchDBTestCase(unittest.TestCase):
         if not m:
             raise Exception("Cannot find port in line %s" % line)
 
-        self.port = m.group('port')
+        self.port = int(m.group('port'))
         self.db = client.CouchDB(host='localhost', port=self.port)
 
-    def tearDown(self):
-        # kill
-        os.kill(self._pid, signal.SIGTERM)
+    def stop(self):
+        self.process.terminate()
 
-        # clean up
         os.system("rm -rf %s" % self.tempdir)
+
+
+class CouchDBTestCase(unittest.TestCase):
+    """
+    I am a TestCase base class for tests against a real CouchDB server.
+    I start a server during setup and stop it during teardown.
+
+    @ivar  db: the CouchDB client
+    @type  db: L{paisley.client.CouchDB}
+    """
+
+    def setUp(self):
+        self.wrapper = CouchDBWrapper()
+        self.wrapper.start()
+        self.db = self.wrapper.db
+
+    def tearDown(self):
+        self.wrapper.stop()

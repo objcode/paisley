@@ -1,4 +1,4 @@
-# -*- test-case-name: test_paisley -*-
+# -*- test-case-name: paisley.test_paisley -*-
 # Copyright (c) 2007-2008
 # See LICENSE for details.
 
