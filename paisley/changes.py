@@ -7,7 +7,6 @@
 from urllib import urlencode
 
 from twisted.internet import error
-from twisted.web import client
 from twisted.protocols import basic
 
 from paisley.client import json
@@ -84,7 +83,7 @@ class ChangeNotifier(object):
     def addListener(self, listener):
         self._listeners.append(listener)
 
-    def start(self, *args, **kwargs):
+    def start(self, **kwargs):
         """
         Start listening and notifying of changes.
         Separated from __init__ so you can add caches and listeners.
