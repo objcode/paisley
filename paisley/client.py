@@ -8,10 +8,7 @@
 CouchDB client.
 """
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from paisley import pjson as json
 
 import codecs
 import logging
@@ -183,9 +180,15 @@ class CouchDB(object):
     def createDB(self, dbName):
         """
         Creates a new database on the server.
+
+        @type  dbName: str
         """
         # Responses: {u'ok': True}, 409 Conflict, 500 Internal Server Error,
         # 401 Unauthorized
+        # 400 {"error":"illegal_database_name","reason":"Only lowercase
+        # characters (a-z), digits (0-9), and any of the characters _, $, (,
+        # ), +, -, and / are allowed. Must begin with a letter."}
+
         return self.put("/%s/" % (dbName,), "", descr='CreateDB'
             ).addCallback(self.parseResult)
 
@@ -193,6 +196,8 @@ class CouchDB(object):
     def deleteDB(self, dbName):
         """
         Deletes the database on the server.
+
+        @type  dbName: str
         """
         # Responses: {u'ok': True}, 404 Object Not Found
         return self.delete("/%s/" % (dbName,)
@@ -243,8 +248,10 @@ class CouchDB(object):
         """
         Open a document in a given database.
 
+        @type docId: C{unicode}
+
         @param revision: if specified, the revision of the document desired.
-        @type revision: C{str}
+        @type revision: C{unicode}
 
         @param full: if specified, return the list of all the revisions of the
             document, along with the document itself.
@@ -256,9 +263,20 @@ class CouchDB(object):
         """
         # Responses: {u'_rev': -1825937535, u'_id': u'mydoc', ...}
         # 404 Object Not Found
-        uri = "/%s/%s" % (dbName, quote(docId))
+
+        # FIXME: remove these conversions and have our callers do them
+        docId = unicode(docId)
+        assert type(docId) is unicode, \
+            'docId is %r instead of unicode' % (type(docId), )
+
+        if revision:
+            revision = unicode(revision)
+            assert type(revision) is unicode, \
+                'revision is %r instead of unicode' % (type(revision), )
+
+        uri = "/%s/%s" % (dbName, quote(docId.encode('utf-8')))
         if revision is not None:
-            uri += "?%s" % (urlencode({"rev": revision}),)
+            uri += "?%s" % (urlencode({"rev": revision.encode('utf-8')}),)
         elif full:
             uri += "?%s" % (urlencode({"full": "true"}),)
         elif attachment:
@@ -296,15 +314,22 @@ class CouchDB(object):
         @type body: C{str} or any structured object
 
         @param docId: if specified, the identifier to be used in the database.
-        @type docId: C{str}
+        @type docId: C{unicode}
         """
-        # Responses: {u'_rev': 1175338395, u'_id': u'mydoc', u'ok': True}
+        # Responses: {'rev': '1-9dd776365618752ddfaf79d9079edf84', 'ok': True, 'id': '198abfee8852816bc112992564000295'}
+
         # 404 Object not found (if database does not exist)
         # 409 Conflict, 500 Internal Server Error
+        if docId:
+            # FIXME: remove these conversions and have our callers do them
+            docId = unicode(docId)
+            assert type(docId) is unicode, \
+                'docId is %r instead of unicode' % (type(docId), )
+
         if not isinstance(body, (str, unicode)):
             body = json.dumps(body)
         if docId is not None:
-            d = self.put("/%s/%s" % (dbName, quote(docId)), body, descr='saveDoc')
+            d = self.put("/%s/%s" % (dbName, quote(docId.encode('utf-8'))), body, descr='saveDoc')
         else:
             d = self.post("/%s/" % (dbName,), body, descr='saveDoc')
         return d.addCallback(self.parseResult)
@@ -313,13 +338,33 @@ class CouchDB(object):
     def deleteDoc(self, dbName, docId, revision):
         """
         Delete a document on given database.
+
+        @param dbName:   identifier of the database.
+        @type  dbName:   C{str}
+
+        @param docId:    the document identifier to be used in the database.
+        @type  docId:    C{unicode}
+
+        @param revision: the revision of the document to delete.
+        @type  revision: C{unicode}
+
         """
         # Responses: {u'_rev': 1469561101, u'ok': True}
         # 500 Internal Server Error
+
+        docId = unicode(docId)
+        assert type(docId) is unicode, \
+            'docId is %r instead of unicode' % (type(docId), )
+
+        revision = unicode(revision)
+        assert type(revision) is unicode, \
+            'revision is %r instead of unicode' % (type(revision), )
+
+
         return self.delete("/%s/%s?%s" % (
                 dbName,
-                quote(docId),
-                urlencode({'rev': revision}))
+                quote(docId.encode('utf-8')),
+                urlencode({'rev': revision.encode('utf-8')}))
             ).addCallback(self.parseResult)
 
 
@@ -390,7 +435,8 @@ class CouchDB(object):
             
             return body
         
-        url = str(self.url_template % (uri,))
+        uurl = unicode(self.url_template % (uri, ))
+        url = uurl.encode('utf-8')
         
         if not kwargs.has_key("headers"):
             kwargs["headers"] = {}

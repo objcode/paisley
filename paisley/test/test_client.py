@@ -483,3 +483,81 @@ class RealCouchDBTestCase(test_util.CouchDBTestCase):
 
         d.callback(None)
         return d
+
+class UnicodeTestCase(test_util.CouchDBTestCase):
+
+    def setUp(self):
+        test_util.CouchDBTestCase.setUp(self)
+
+        d = self.db.createDB('test')
+        def createCb(result):
+            self.assertEquals(result, {'ok': True})
+        d.addCallback(createCb)
+        return d
+
+    def tearDown(self):
+        d = self.db.deleteDB('test')
+        def deleteCb(result):
+            self.assertEquals(result, {'ok': True})
+        d.addCallback(deleteCb)
+        d.addCallback(lambda _: test_util.CouchDBTestCase.tearDown(self))
+        return d
+
+    def testUnicodeContents(self):
+        name = u'\xc3\xa9preuve'
+
+        d = defer.Deferred()
+
+        d.addCallback(lambda _: self.db.saveDoc('test', {
+            'name': name,
+            name: 'name',
+            }))
+        d.addCallback(lambda r: self.db.openDoc('test', r['id']))
+        def check(r):
+            self.assertEquals(r['name'], name)
+            self.assertEquals(r[name], u'name')
+            self.assertEquals(type(r['name']), unicode)
+            self.assertEquals(type(r[name]), unicode)
+        d.addCallback(check)
+        d.callback(None)
+        return d
+
+    def testUnicodeId(self):
+        docId = u'\xc3\xa9preuve'
+
+        d = defer.Deferred()
+
+        d.addCallback(lambda _: self.db.saveDoc('test', {
+            'name': 'name',
+            }, docId=docId))
+
+        def saveDocCb(r):
+            self.assertEquals(r['id'], docId)
+            return self.db.openDoc('test', r['id'])
+        d.addCallback(saveDocCb)
+
+        def check(r):
+            self.assertEquals(r[u'name'], u'name')
+            self.assertEquals(type(r['name']), unicode)
+            self.assertEquals(r[u'_id'], docId)
+            self.assertEquals(type(r[u'_id']), unicode)
+            self.assertEquals(type(r[u'_rev']), unicode)
+
+            # open again, with revision
+            return self.db.openDoc('test', r['_id'], revision=r['_rev'])
+        d.addCallback(check)
+
+        def checkRevisioned(r):
+            self.assertEquals(r[u'name'], u'name')
+            self.assertEquals(type(r['name']), unicode)
+            self.assertEquals(r[u'_id'], docId)
+            self.assertEquals(type(r[u'_id']), unicode)
+            self.assertEquals(type(r[u'_rev']), unicode)
+            return r
+        d.addCallback(checkRevisioned)
+
+        d.addCallback(lambda r: self.db.deleteDoc(
+            'test', r[u'_id'], r[u'_rev']))
+
+        d.callback(None)
+        return d
