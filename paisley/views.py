@@ -1,4 +1,6 @@
-# -*- test-case-name: paisley.tests.test_views -*-
+# -*- Mode: Python; test-case-name: paisley.test.test_views -*-
+# vi:si:et:sw=4:sts=4:ts=4
+
 # Copyright (c) 2007-2008
 # See LICENSE for details.
 

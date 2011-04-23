@@ -1,6 +1,8 @@
-# -*- test-case-name: paisley.test_changes -*-
-# -*- Mode: Python -*-
+# -*- Mode: Python; test-case-name: paisley.test.test_changes -*-
 # vi:si:et:sw=4:sts=4:ts=4
+
+# Copyright (c) 2011
+# See LICENSE for details.
 
 import os
 
@@ -9,7 +11,7 @@ from twisted.trial import unittest
 
 from paisley import client, changes
 
-from paisley import test_util
+from paisley.test import test_util
 
 
 class FakeNotifier(object):

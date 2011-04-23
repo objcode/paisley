@@ -1,4 +1,4 @@
-# -*- Mode: Python; test-case-name: paisley.tests.test_mapping -*-
+# -*- Mode: Python; test-case-name: paisley.test.test_mapping -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
 # Copyright (c) 2008

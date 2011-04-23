@@ -1,3 +1,10 @@
+# -*- Mode: Python -*-
+# vi:si:et:sw=4:sts=4:ts=4
+
+# Copyright (c) 2011
+# See LICENSE for details.
+
+
 from twisted.web import http
 from twisted.internet import defer
 from twisted.web.error import Error

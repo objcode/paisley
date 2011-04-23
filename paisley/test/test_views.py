@@ -1,3 +1,6 @@
+# -*- Mode: Python; test-case-name: paisley.test.test_views -*-
+# vi:si:et:sw=4:sts=4:ts=4
+
 # Copyright (c) 2008
 # See LICENSE for details.
 
@@ -8,7 +11,7 @@ Tests for the object mapping view API.
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import succeed
 
-from paisley import test_util
+from paisley.test import test_util
 
 from paisley.views import View
 

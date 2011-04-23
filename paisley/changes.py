@@ -1,6 +1,8 @@
-# -*- test-case-name: paisley.test_changes -*-
-# -*- Mode: Python -*-
+# -*- Mode: Python; test-case-name: paisley.test.test_changes -*-
 # vi:si:et:sw=4:sts=4:ts=4
+
+# Copyright (c) 2011
+# See LICENSE for details.
 
 from urllib import urlencode
 

@@ -1,3 +1,6 @@
+# -*- Mode: Python; test-case-name: paisley.test.test_client -*-
+# vi:si:et:sw=4:sts=4:ts=4
+
 # Copyright (c) 2007-2008
 # See LICENSE for details.
 
@@ -21,7 +24,7 @@ from twisted.web import resource, server
 
 import paisley
 
-from paisley import test_util
+from paisley.test import test_util
 
 class TestableCouchDB(paisley.CouchDB):
     """
