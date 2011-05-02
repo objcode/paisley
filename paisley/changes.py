@@ -6,7 +6,7 @@
 
 from urllib import urlencode
 
-from twisted.internet import error
+from twisted.internet import error, defer
 from twisted.protocols import basic
 
 from paisley.client import json
@@ -18,7 +18,6 @@ class ChangeReceiver(basic.LineReceiver):
     delimiter = '\n'
 
     def __init__(self, notifier):
-
         self._notifier = notifier
 
     def lineReceived(self, line):
@@ -65,7 +64,7 @@ class ChangeListener:
 
 class ChangeNotifier(object):
 
-    def __init__(self, db, dbName):
+    def __init__(self, db, dbName, since=None):
         self._db = db
         self._dbName = dbName
 
@@ -73,15 +72,18 @@ class ChangeNotifier(object):
         self._listeners = []
         self._prot = ChangeReceiver(self)
 
-        self._since = None
+        self._since = since
 
-        self._stopped = None
+        self._stopped = True
 
     def addCache(self, cache):
         self._caches.append(cache)
 
     def addListener(self, listener):
         self._listeners.append(listener)
+
+    def isRunning(self):
+        return not self._stopped
 
     def start(self, **kwargs):
         """
@@ -93,25 +95,33 @@ class ChangeNotifier(object):
         assert 'feed' not in kwargs, \
             "ChangeNotifier always listens continuously."
 
-        d = self._db.infoDB(self._dbName)
+        d = defer.succeed(None)
 
-        def infoDBCb(info):
+        def setSince(info):
+            self._since = info['update_seq']
+
+        if self._since is None:
+            d.addCallback(lambda _: self._db.infoDB(self._dbName))
+            d.addCallback(setSince)
+
+        def requestChanges():
             kwargs['feed'] = 'continuous'
-            kwargs['since'] = info['update_seq']
+            kwargs['since'] = self._since
+            kwargs['heartbeat'] = 1000
             # FIXME: str should probably be unicode, as dbName can be
             url = str(self._db.url_template %
                 '/%s/_changes?%s' % (self._dbName, urlencode(kwargs)))
             return self._db.client.request('GET', url)
-        d.addCallback(infoDBCb)
+        d.addCallback(lambda _: requestChanges())
 
         def requestCb(response):
             response.deliverBody(self._prot)
+            self._stopped = False
         d.addCallback(requestCb)
 
         def returnCb(_):
             return self._since
         d.addCallback(returnCb)
-
         return d
 
     def stop(self):
@@ -126,6 +136,10 @@ class ChangeNotifier(object):
     # called by receiver
 
     def changed(self, change):
+        seq = change.get('seq', None)
+        if seq:
+            self._since = seq
+
         for cache in self._caches:
             cache.delete(change['id'])
 

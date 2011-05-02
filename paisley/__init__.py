@@ -5,5 +5,7 @@
 # See LICENSE for details.
 
 import client
+import changes
 
 CouchDB = client.CouchDB
+ChangeNotifier = changes.ChangeNotifier
