@@ -74,7 +74,7 @@ class ChangeNotifier(object):
 
         self._since = since
 
-        self._stopped = True
+        self._running = False
 
     def addCache(self, cache):
         self._caches.append(cache)
@@ -83,7 +83,7 @@ class ChangeNotifier(object):
         self._listeners.append(listener)
 
     def isRunning(self):
-        return not self._stopped
+        return self._running
 
     def start(self, **kwargs):
         """
@@ -107,7 +107,6 @@ class ChangeNotifier(object):
         def requestChanges():
             kwargs['feed'] = 'continuous'
             kwargs['since'] = self._since
-            kwargs['heartbeat'] = 1000
             # FIXME: str should probably be unicode, as dbName can be
             url = str(self._db.url_template %
                 '/%s/_changes?%s' % (self._dbName, urlencode(kwargs)))
@@ -116,7 +115,7 @@ class ChangeNotifier(object):
 
         def requestCb(response):
             response.deliverBody(self._prot)
-            self._stopped = False
+            self._running = True
         d.addCallback(requestCb)
 
         def returnCb(_):
@@ -130,7 +129,7 @@ class ChangeNotifier(object):
         # "If it is decided that the rest of the response body is not desired,
         # stopProducing can be used to stop delivery permanently; after this,
         # the protocol's connectionLost method will be called."
-        self._stopped = True
+        self._running = False
         self._prot.stopProducing()
 
     # called by receiver
@@ -158,8 +157,9 @@ class ChangeNotifier(object):
         from twisted.web import _newclient
         if reason.check(_newclient.ResponseFailed):
             if reason.value.reasons[0].check(error.ConnectionDone) and \
-                self._stopped:
+                not self.isRunning():
                 reason = reason.value.reasons[0]
 
+        self._running = False
         for listener in self._listeners:
             listener.connectionLost(reason)
