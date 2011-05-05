@@ -6,7 +6,7 @@
 
 from urllib import urlencode
 
-from twisted.internet import error
+from twisted.internet import error, defer
 from twisted.protocols import basic
 
 from paisley.client import json
@@ -18,7 +18,6 @@ class ChangeReceiver(basic.LineReceiver):
     delimiter = '\n'
 
     def __init__(self, notifier):
-
         self._notifier = notifier
 
     def lineReceived(self, line):
@@ -65,23 +64,26 @@ class ChangeListener:
 
 class ChangeNotifier(object):
 
-    def __init__(self, db, dbName):
+    def __init__(self, db, dbName, since=None):
         self._db = db
         self._dbName = dbName
 
         self._caches = []
         self._listeners = []
-        self._prot = ChangeReceiver(self)
+        self._prot = None
 
-        self._since = None
+        self._since = since
 
-        self._stopped = None
+        self._running = False
 
     def addCache(self, cache):
         self._caches.append(cache)
 
     def addListener(self, listener):
         self._listeners.append(listener)
+
+    def isRunning(self):
+        return self._running
 
     def start(self, **kwargs):
         """
@@ -93,25 +95,33 @@ class ChangeNotifier(object):
         assert 'feed' not in kwargs, \
             "ChangeNotifier always listens continuously."
 
-        d = self._db.infoDB(self._dbName)
+        d = defer.succeed(None)
 
-        def infoDBCb(info):
+        def setSince(info):
+            self._since = info['update_seq']
+
+        if self._since is None:
+            d.addCallback(lambda _: self._db.infoDB(self._dbName))
+            d.addCallback(setSince)
+
+        def requestChanges():
             kwargs['feed'] = 'continuous'
-            kwargs['since'] = info['update_seq']
+            kwargs['since'] = self._since
             # FIXME: str should probably be unicode, as dbName can be
             url = str(self._db.url_template %
                 '/%s/_changes?%s' % (self._dbName, urlencode(kwargs)))
             return self._db.client.request('GET', url)
-        d.addCallback(infoDBCb)
+        d.addCallback(lambda _: requestChanges())
 
         def requestCb(response):
+            self._prot = ChangeReceiver(self)
             response.deliverBody(self._prot)
+            self._running = True
         d.addCallback(requestCb)
 
         def returnCb(_):
             return self._since
         d.addCallback(returnCb)
-
         return d
 
     def stop(self):
@@ -120,12 +130,16 @@ class ChangeNotifier(object):
         # "If it is decided that the rest of the response body is not desired,
         # stopProducing can be used to stop delivery permanently; after this,
         # the protocol's connectionLost method will be called."
-        self._stopped = True
+        self._running = False
         self._prot.stopProducing()
 
     # called by receiver
 
     def changed(self, change):
+        seq = change.get('seq', None)
+        if seq:
+            self._since = seq
+
         for cache in self._caches:
             cache.delete(change['id'])
 
@@ -144,8 +158,10 @@ class ChangeNotifier(object):
         from twisted.web import _newclient
         if reason.check(_newclient.ResponseFailed):
             if reason.value.reasons[0].check(error.ConnectionDone) and \
-                self._stopped:
+                not self.isRunning():
                 reason = reason.value.reasons[0]
 
+        self._prot = None
+        self._running = False
         for listener in self._listeners:
             listener.connectionLost(reason)
