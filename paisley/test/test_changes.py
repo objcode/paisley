@@ -272,6 +272,63 @@ function(doc, req) {
         return d
 
 
+class RestartingNotifierTest(ChangeReceiverTestCase):
+
+    def setUp(self):
+        ChangeReceiverTestCase.setUp(self)
+        # get database with some history
+        d = self.db.createDB('test')
+        d.addCallback(self._createDoc, 'mydoc')
+        return d
+
+    def testStartingWithSinceParam(self):
+        '''
+        Here we start notifier from the begining of the history and assert
+        we get the historical change.
+        Than we update the database once the notifier is stopped, restart
+        notifier and assert we got the change.
+        '''
+
+        notifier = self._createNotifier(since=0)
+        self.assertFalse(notifier.isRunning())
+
+        d = defer.succeed(None)
+        d.addCallback(self._start, notifier)
+        d.addCallback(self._assertNotification, 'mydoc')
+        d.addCallback(self._stop, notifier)
+        # now create other document while notifier is not working
+        d.addCallback(self._createDoc, 'other_doc')
+        d.addCallback(self._start, notifier)
+        # assert than we receive notification after reconnecting
+        d.addCallback(self._assertNotification, 'other_doc')
+        d.addCallback(self._stop, notifier)
+        return d
+
+    def _start(self, _, notifier):
+        d = self.waitForChange()
+        d2 = notifier.start()
+        d2.addCallback(lambda _: d)
+        d2.addCallback(lambda _: self.assertTrue(notifier.isRunning()))
+        return d2
+
+    def _stop(self, _, notifier):
+        notifier.stop()
+        d = self.waitForNextCycle()
+        d.addCallback(lambda _: self.assertFalse(notifier.isRunning()))
+        return d
+
+    def _assertNotification(self, _, expected_id):
+        self.assertEqual(expected_id, self.lastChange['id'])
+
+    def _createNotifier(self, **options):
+        notifier = changes.ChangeNotifier(self.db, 'test', **options)
+        notifier.addListener(self)
+        return notifier
+
+    def _createDoc(self, _, doc_id):
+        return self.db.saveDoc('test', {'key': 'value'}, doc_id)
+
+
 class ConnectionLostTestCase(BaseTestCase, changes.ChangeListener):
 
     def setUp(self):

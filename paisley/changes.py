@@ -70,7 +70,7 @@ class ChangeNotifier(object):
 
         self._caches = []
         self._listeners = []
-        self._prot = ChangeReceiver(self)
+        self._prot = None
 
         self._since = since
 
@@ -114,6 +114,7 @@ class ChangeNotifier(object):
         d.addCallback(lambda _: requestChanges())
 
         def requestCb(response):
+            self._prot = ChangeReceiver(self)
             response.deliverBody(self._prot)
             self._running = True
         d.addCallback(requestCb)
@@ -160,6 +161,7 @@ class ChangeNotifier(object):
                 not self.isRunning():
                 reason = reason.value.reasons[0]
 
+        self._prot = None
         self._running = False
         for listener in self._listeners:
             listener.connectionLost(reason)
