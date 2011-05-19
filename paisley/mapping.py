@@ -63,12 +63,10 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from time import strptime, struct_time
 
-from couchdb.design import ViewDefinition
-
 __all__ = ['Mapping', 'Document', 'Field', 'TextField', 'FloatField',
            'IntegerField', 'LongField', 'BooleanField', 'DecimalField',
            'DateField', 'DateTimeField', 'TimeField', 'DictField', 'ListField',
-           'TupleField', 'ViewField']
+           'TupleField']
 __docformat__ = 'restructuredtext en'
 
 DEFAULT = object()
@@ -184,116 +182,8 @@ class Mapping(object):
         return self.unwrap()
 
 
-class ViewField(object):
-    r"""Descriptor that can be used to bind a view definition to a property of
-    a `Document` class.
-    
-    >>> class Person(Document):
-    ...     name = TextField()
-    ...     age = IntegerField()
-    ...     by_name = ViewField('people', '''\
-    ...         function(doc) {
-    ...             emit(doc.name, doc);
-    ...         }''')
-    >>> Person.by_name
-    <ViewDefinition '_design/people/_view/by_name'>
-    
-    >>> print Person.by_name.map_fun
-    function(doc) {
-        emit(doc.name, doc);
-    }
-    
-    That property can be used as a function, which will execute the view.
-    
-    >>> from couchdb import Database
-    >>> db = Database('http://localhost:5984/python-tests')
-    
-    >>> Person.by_name(db, count=3)
-    <ViewResults <PermanentView '_design/people/_view/by_name'> {'count': 3}>
-    
-    The results produced by the view are automatically wrapped in the
-    `Document` subclass the descriptor is bound to. In this example, it would
-    return instances of the `Person` class. But please note that this requires
-    the values of the view results to be dictionaries that can be mapped to the
-    mapping defined by the containing `Document` class. Alternatively, the
-    ``include_docs`` query option can be used to inline the actual documents in
-    the view results, which will then be used instead of the values.
-    
-    If you use Python view functions, this class can also be used as a
-    decorator:
-    
-    >>> class Person(Document):
-    ...     name = TextField()
-    ...     age = IntegerField()
-    ...
-    ...     @ViewField.define('people')
-    ...     def by_name(doc):
-    ...         yield doc['name'], doc
-    
-    >>> Person.by_name
-    <ViewDefinition '_design/people/_view/by_name'>
-
-    >>> print Person.by_name.map_fun
-    def by_name(doc):
-        yield doc['name'], doc
-    """
-
-    def __init__(self, design, map_fun, reduce_fun=None, name=None,
-                 language='javascript', wrapper=DEFAULT, **defaults):
-        """Initialize the view descriptor.
-        
-        :param design: the name of the design document
-        :param map_fun: the map function code
-        :param reduce_fun: the reduce function code (optional)
-        :param name: the actual name of the view in the design document, if
-                     it differs from the name the descriptor is assigned to
-        :param language: the name of the language used
-        :param wrapper: an optional callable that should be used to wrap the
-                        result rows
-        :param defaults: default query string parameters to apply
-        """
-        self.design = design
-        self.name = name
-        self.map_fun = map_fun
-        self.reduce_fun = reduce_fun
-        self.language = language
-        self.wrapper = wrapper
-        self.defaults = defaults
-
-    @classmethod
-    def define(cls, design, name=None, language='python', wrapper=DEFAULT,
-               **defaults):
-        """Factory method for use as a decorator (only suitable for Python
-        view code).
-        """
-        def view_wrapped(fun):
-            return cls(design, fun, language=language, wrapper=wrapper,
-                       **defaults)
-        return view_wrapped
-
-    def __get__(self, instance, cls=None):
-        if self.wrapper is DEFAULT:
-            def wrapper(row):
-                if row.doc is not None:
-                    return cls.wrap(row.doc)
-                data = row.value
-                data['_id'] = row.id
-                return cls.wrap(data)
-        else:
-            wrapper = self.wrapper
-        return ViewDefinition(self.design, self.name, self.map_fun,
-                              self.reduce_fun, language=self.language,
-                              wrapper=wrapper, **self.defaults)
-
-
 class DocumentMeta(MappingMeta):
-
-    def __new__(cls, name, bases, d):
-        for attrname, attrval in d.items():
-            if isinstance(attrval, ViewField):
-                if not attrval.name:
-                    attrval.name = attrname
-        return MappingMeta.__new__(cls, name, bases, d)
+    pass
 
 
 class Document(Mapping):
