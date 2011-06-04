@@ -385,7 +385,7 @@ class CouchDB(object):
 
         if "keys" in kwargs:
             body = {"keys": kwargs.pop("keys")}
-            return self.post(buildUri(), body=body, descr='openView')
+            return self.post(buildUri(), body=body, descr='openView').addCallback(self.parseResult)
         else:
             return self.get(buildUri(), descr='openView').addCallback(self.parseResult)        
 
