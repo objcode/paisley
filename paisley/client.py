@@ -380,11 +380,21 @@ class CouchDB(object):
             return "/%s/_design/%s/_view/%s?%s" % (
                 dbName, quote(docId), viewId, urlencode(kwargs))            
 
+        # if there is a "keys" argument, remove it from the kwargs
+        # dictionary now so that it doesn't get double JSON-encoded
+        body = None
+        if "keys" in kwargs:
+            body = json.dumps({"keys": kwargs.pop("keys")})
+
+        # encode the rest of the values with JSON for use as query
+        # arguments in the URI
         for k, v in kwargs.iteritems():
             kwargs[k] = json.dumps(v) #couchdb requires this
 
-        if "keys" in kwargs:
-            body = {"keys": kwargs.pop("keys")}
+        # If there's a list of keys to send, POST the
+        # query so that we can upload the keys as the body of
+        # the POST request, otherwise use a GET request
+        if body:
             return self.post(buildUri(), body=body, descr='openView').addCallback(self.parseResult)
         else:
             return self.get(buildUri(), descr='openView').addCallback(self.parseResult)        
