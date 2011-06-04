@@ -471,6 +471,46 @@ class RealCouchDBTestCase(test_util.CouchDBTestCase):
             self.failUnless('test' in result)
             self.failUnless('_users' in result)
         d.addCallback(listCb)
+        d.addCallback(lambda _: self.db.saveDoc('test', {'number': 1}, '1'))
+        def saveDoc(result):
+            self.assertEquals(result[u'ok'], True)
+            self.assertEquals(result[u'id'], u'1')
+            # save document revision for comparison later
+            self.doc_rev = result[u'rev']
+        d.addCallback(saveDoc)
+        doc = {}
+        self.db.addViews(doc, {'test': {'map': 'function (doc) { emit(doc.number, doc) }'}})
+        d.addCallback(lambda _: self.db.saveDoc('test', doc, '_design/test'))
+        def addViewCb(result):
+            self.assertEquals(result[u'ok'], True)
+        d.addCallback(addViewCb)
+        d.addCallback(lambda _: self.db.openView('test', 'test', 'test'))
+        def openView1Cb(result):
+            self.assertEquals(result[u'total_rows'], 1)
+            self.assertEquals(result[u'offset'], 0)
+            self.assertEquals(result[u'rows'][0][u'id'], u'1')
+            self.assertEquals(result[u'rows'][0][u'key'], 1)
+            self.assertEquals(result[u'rows'][0][u'value'][u'_id'], u'1')
+            self.assertEquals(result[u'rows'][0][u'value'][u'number'], 1)
+            self.assertEquals(result[u'rows'][0][u'value'][u'_rev'], self.doc_rev)
+        d.addCallback(openView1Cb)
+        d.addCallback(lambda _: self.db.openView('test', 'test', 'test', keys = [1]))
+        def openView2Cb(result):
+            self.assertEquals(result[u'total_rows'], 1)
+            self.assertEquals(result[u'offset'], 0)
+            self.assertEquals(result[u'rows'][0][u'id'], u'1')
+            self.assertEquals(result[u'rows'][0][u'key'], 1)
+            self.assertEquals(result[u'rows'][0][u'value'][u'_id'], u'1')
+            self.assertEquals(result[u'rows'][0][u'value'][u'number'], 1)
+            self.assertEquals(result[u'rows'][0][u'value'][u'_rev'], self.doc_rev)
+        d.addCallback(openView2Cb)
+        d.addCallback(lambda _: self.db.openView('test', 'test', 'test', keys = [0]))
+        def openView3Cb(result):
+            self.assertEquals(result[u'total_rows'], 1)
+            self.assertEquals(result[u'offset'], 0)
+            self.assertEquals(result[u'update_seq'], 2)
+            self.assertEquals(result[u'rows'], [])
+        d.addCallback(openView3Cb)
         d.addCallback(lambda _: self.db.deleteDB('test'))
         def deleteCb(result):
             self.assertEquals(result, {'ok': True})
