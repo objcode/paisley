@@ -51,6 +51,7 @@ class BaseTestCase(test_util.CouchDBTestCase):
 
     def tearDown(self):
         self.tearing = True
+        test_util.CouchDBTestCase.tearDown(self)
 
     def waitForNextCycle(self):
         # Wait for the reactor to cycle.
