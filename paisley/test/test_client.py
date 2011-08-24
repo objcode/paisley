@@ -22,11 +22,11 @@ from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 from twisted.web import resource, server
 
-import paisley
+from paisley import client
 
 from paisley.test import test_util
 
-class TestableCouchDB(paisley.CouchDB):
+class TestableCouchDB(client.CouchDB):
     """
     A couchdb client that can be tested: override the getPage method.
     """
@@ -35,7 +35,7 @@ class TestableCouchDB(paisley.CouchDB):
         """
         Initialize the client: forward parameters, and create attributes used in tests.
         """
-        paisley.CouchDB.__init__(self, *args, **kwargs)
+        client.CouchDB.__init__(self, *args, **kwargs)
         self.deferred = Deferred()
         self.uri = None
         self.kwargs = None
@@ -82,7 +82,7 @@ class CouchDBTestCase(TestCase):
         """
         Test setting up client with authentication
         """
-        self.client_auth = paisley.CouchDB("localhost",
+        self.client_auth = client.CouchDB("localhost",
                                            username="test",
                                            password="testpass")
         
@@ -443,7 +443,7 @@ class ConnectedCouchDBTestCase(TestCase):
         site = server.Site(self.resource)
         port = reactor.listenTCP(0, site, interface="127.0.0.1")
         self.addCleanup(port.stopListening)
-        self.client = paisley.CouchDB("127.0.0.1", port.getHost().port)
+        self.client = client.CouchDB("127.0.0.1", port.getHost().port)
 
 
     def test_createDB(self):
