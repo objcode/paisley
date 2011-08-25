@@ -48,10 +48,10 @@ class ChangeListener:
         Only changes that contain an id get received.
 
         A change is a dictionary with:
-        - id:  document id
-        - seq: sequence number of change
-        - changes: list of dict containing document revisions
-        - deleted (optional)
+          - id:  document id
+          - seq: sequence number of change
+          - changes: list of dict containing document revisions
+          - deleted (optional)
         """
         pass
 

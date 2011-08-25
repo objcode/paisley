@@ -411,7 +411,7 @@ class FakeCouchDBResource(resource.Resource):
     Fake a couchDB resource.
 
     @ivar result: value set in tests to be returned by the resource.
-    @param result: C{str}
+    @type result: C{str}
     """
     result = ""
 

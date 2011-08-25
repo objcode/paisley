@@ -4,7 +4,6 @@
 # Copyright (c) 2007-2008
 # See LICENSE for details.
 
-import signal
 import re
 import os
 import tempfile
@@ -85,7 +84,7 @@ class CouchDBTestCase(unittest.TestCase):
     I start a server during setup and stop it during teardown.
 
     @ivar  db: the CouchDB client
-    @type  db: L{paisley.client.CouchDB}
+    @type  db: L{client.CouchDB}
     """
 
     def setUp(self):
