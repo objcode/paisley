@@ -8,6 +8,7 @@ import re
 import os
 import tempfile
 import subprocess
+import time
 
 from twisted.trial import unittest
 
@@ -64,9 +65,10 @@ stderr:
 %s""" % (
                     self.process.returncode, self.process.stdout.read(),
                     self.process.stderr.read()))
+            time.sleep(0.01)
 
         while os.stat(logPath).st_size == 0:
-            pass
+            time.sleep(0.01)
 
         PORT_RE = re.compile(
             'Apache CouchDB has started on http://127.0.0.1:(?P<port>\d+)')

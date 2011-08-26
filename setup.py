@@ -20,8 +20,10 @@ def main():
         license="MIT",
         url="http://github.com/smcq/paisley",
         download_url="http://github.com/smcq/paisley/zipball/v0.3.1",
-        packages=["paisley", "paisley.test"],
-    )
+        packages = setuptools.find_packages (),
+        package_data = {
+            '': ['*.template'],
+            })
 
 if __name__ == "__main__":
     main()

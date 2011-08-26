@@ -208,12 +208,12 @@ class CouchDBTestCase(TestCase):
         return self._checkParseDeferred(d)
 
 
-    def test_listDocCount(self):
+    def test_listDocLimit(self):
         """
-        Test listDoc with a count.
+        Test listDoc with a limit.
         """
-        d = self.client.listDoc("mydb", count=3)
-        self.assertEquals(self.client.uri, "/mydb/_all_docs?count=3")
+        d = self.client.listDoc("mydb", limit=3)
+        self.assertEquals(self.client.uri, "/mydb/_all_docs?limit=3")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
@@ -222,8 +222,8 @@ class CouchDBTestCase(TestCase):
         """
         Test listDoc with all options activated.
         """
-        d = self.client.listDoc("mydb", count=3, startKey=1, reverse=True)
-        self.assertEquals(self.client.uri, "/mydb/_all_docs?count=3&startkey=1&reverse=true")
+        d = self.client.listDoc("mydb", limit=3, startKey=1, reverse=True)
+        self.assertEquals(self.client.uri, "/mydb/_all_docs?startkey=1&limit=3&reverse=true")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
@@ -339,7 +339,7 @@ class CouchDBTestCase(TestCase):
                                  "viewdoc",
                                  "myview",
                                  startkey="foo",
-                                 count=10)
+                                 limit=10)
         self.assertEquals(self.client.kwargs["method"], "GET")
         self.failUnless(
             self.client.uri.startswith("/mydb/_design/viewdoc/_view/myview"))
@@ -349,7 +349,7 @@ class CouchDBTestCase(TestCase):
         # e.g., ?startkey=A would return
         # {"error":"bad_request","reason":"invalid UTF-8 JSON"}
         self.assertEquals(query["startkey"], ['"foo"'])
-        self.assertEquals(query["count"], ["10"])
+        self.assertEquals(query["limit"], ["10"])
         return self._checkParseDeferred(d)
 
     def test_openViewWithKeysQuery(self):
@@ -360,12 +360,12 @@ class CouchDBTestCase(TestCase):
                                  "viewdoc2",
                                  "myview2",
                                  keys=[1,3,4, "hello, world", {1: 5}],
-                                 count=5)
+                                 limit=5)
         self.assertEquals(self.client.kwargs["method"], "POST")
         self.failUnless(
             self.client.uri.startswith('/mydb2/_design/viewdoc2/_view/myview2'))
         query = cgi.parse_qs(self.client.uri.split('?', 1)[-1])
-        self.assertEquals(query, dict(count=['5']))
+        self.assertEquals(query, dict(limit=['5']))
         self.assertEquals(self.client.kwargs['postdata'], 
                           '{"keys": [1, 3, 4, "hello, world", {"1": 5}]}')
         
@@ -458,16 +458,96 @@ class ConnectedCouchDBTestCase(TestCase):
         d.addCallback(cb)
         return d
 
-class RealCouchDBTestCase(test_util.CouchDBTestCase):
+class RealCouchDBTestCase(TestCase):
+    
+    def setUp(self):
+        self.wrapper = test_util.CouchDBWrapper()
+        self.wrapper.start()
+        self.db = self.wrapper.db
+        self.bound = False
+        self.db_name = 'test'
+        return self._resetDatabase()
+
+    def tearDown(self):
+        self.wrapper.stop()
+        pass
+        
+    def _resetDatabase(self):
+        """
+        Helper method to create an empty test database, deleting the existing one if required.
+        Used to clean up before running each test.
+        """
+        d = defer.Deferred()
+        d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
+        d.addCallback(lambda _: self.db.createDB(self.db_name))
+        def createOkCb(result):
+            self.assertEquals(result, {'ok': True})
+        d.addCallback(createOkCb)
+        d.addCallback(lambda _: self.db.infoDB(self.db_name))
+        def checkInfoNewDatabase(result):
+            self.assertEquals(result['update_seq'], 0)
+            self.assertEquals(result['purge_seq'], 0)
+            self.assertEquals(result['doc_count'], 0)
+            self.assertEquals(result['db_name'], 'test')
+            self.assertEquals(result['doc_del_count'], 0)
+            self.assertEquals(result['committed_update_seq'], 0)
+        d.addCallback(checkInfoNewDatabase)
+        # We need to know the version to perform the tests
+        #   Ideally the client class would trigger this automatically
+        d.addCallback(lambda _: self.db.getVersion())
+        d.callback(None)
+        return d
+            
+    def _deleteTestDatabaseIfExists(self):
+        """
+        Helper method to delete the test database, wether it exists or not.
+        Used to clean up before running each test.
+        """
+        d = defer.Deferred()
+        if self.bound :
+            d.addCallback(lambda _: self.db.deleteDB())
+        else          :
+            d.addCallback(lambda _: self.db.deleteDB(self.db_name))
+        def deleteCb(result):
+            self.assertEquals(result, {'ok': True})
+        def deleteFailedCb(failure):
+            pass
+        d.addCallbacks(deleteCb, deleteFailedCb)
+        d.callback(None)
+        return d
+        
+    def _saveDoc(self, body, doc_id):
+        """
+        Helper method to save a document, and verify that it was successfull.
+        """
+        d = defer.Deferred()
+        if self.bound :
+            d.addCallback(lambda _: self.db.saveDoc(body, doc_id))
+        else          :
+            d.addCallback(lambda _: self.db.saveDoc(self.db_name, body, doc_id))
+        def checkDocumentCreated(result):
+            self.assertEquals(result['ok'], True)
+            if doc_id != None : self.assertEquals(result['id'], doc_id)
+            self._rev = result['rev']
+        d.addCallback(checkDocumentCreated)
+        d.callback(None)
+        return d
+
     def testDB(self):
         d = defer.Deferred()
+        d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
+        d.addCallback(lambda _: self.db.getVersion())
         d.addCallback(lambda _: self.db.createDB('test'))
         def createCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(createCb)
         d.addCallback(lambda _: self.db.listDB())
         def listCb(result):
-            self.assertEquals(len(result), 2)
+            if self.db.version.__ge__((1,1,0)):
+                self.assertEquals(len(result), 3)
+                self.failUnless('_replicator' in result)
+            else:
+                self.assertEquals(len(result), 2)
             self.failUnless('test' in result)
             self.failUnless('_users' in result)
         d.addCallback(listCb)
@@ -517,18 +597,372 @@ class RealCouchDBTestCase(test_util.CouchDBTestCase):
         d.addCallback(deleteCb)
         d.addCallback(lambda _: self.db.listDB())
         def listCbAgain(result):
-            self.assertEquals(len(result), 1)
+            if self.db.version.__ge__((1,1,0)):
+                self.assertEquals(len(result), 2)
+            else:
+                self.assertEquals(len(result), 1)
             self.failUnless('_users' in result)
         d.addCallback(listCbAgain)
 
         d.callback(None)
         return d
 
+    def test_createDB(self):
+        """
+        Test createDB: this should C{PUT} the DB name in the uri.
+        """
+        d = defer.Deferred()
+        # Since during setUp we already create the database, and here we are
+        #   specifically testing the creation, we need to delete it first
+        d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
+        d.addCallback(lambda _: self.db.createDB(self.db_name))
+        def createCb(result):
+            self.assertEquals(result, {'ok': True})
+        d.addCallback(createCb)
+        d.callback(None)
+        return d
+
+    def test_deleteDB(self):
+        """
+        Test deleteDB: this should C{DELETE} the DB name.
+        """
+        d = defer.Deferred()
+        d.addCallback(lambda _: self.db.deleteDB(self.db_name))
+        def deleteCb(result):
+            self.assertEquals(result, {'ok': True})
+        d.addCallback(deleteCb)
+        d.callback(None)
+        return d
+
+    def test_listDB(self):
+        """
+        Test listDB: this should C{GET} a specific uri.
+        """
+        d = defer.Deferred()
+        d.addCallback(lambda _: self.db.listDB())
+        def listCb(result):
+            if self.db.version.__ge__((1,1,0)):
+                self.assertEquals(len(result), 3)
+                self.failUnless('_replicator' in result)
+            else:
+                self.assertEquals(len(result), 2)
+            self.failUnless('test' in result)
+            self.failUnless('_users' in result)
+        d.addCallback(listCb)
+        d.callback(None)
+        return d
+
+    def test_infoDB(self):
+        """
+        Test infoDB: this should C{GET} the DB name.
+        """
+        d = defer.Deferred()
+        # Get info about newly created database
+        d.addCallback(lambda _: self.db.infoDB(self.db_name))
+        def checkInfoNewDatabase(result):
+            self.assertEquals(result['update_seq'], 0)
+            self.assertEquals(result['purge_seq'], 0)
+            self.assertEquals(result['doc_count'], 0)
+            self.assertEquals(result['db_name'], 'test')
+            self.assertEquals(result['doc_del_count'], 0)
+            self.assertEquals(result['committed_update_seq'], 0)
+        d.addCallback(checkInfoNewDatabase)
+        d.callback(None)
+        return d
+
+    def test_listDoc(self):
+        """
+        Test listDoc.
+        """
+        d = defer.Deferred()
+        # List documents in newly created database
+        d.addCallback(lambda _: self.db.listDoc(self.db_name))
+        def checkDatabaseEmpty(result):
+            self.assertEquals(result['rows'], [])
+            self.assertEquals(result['total_rows'], 0)
+            self.assertEquals(result['offset'], 0)
+        d.addCallback(checkDatabaseEmpty)
+        d.callback(None)
+        return d
+
+    def test_listDocReversed(self):
+        """
+        Test listDoc reversed.
+        """
+        d = defer.Deferred()
+        # List documents in newly created database
+        d.addCallback(lambda _: self.db.listDoc(self.db_name, reverse=True))
+        def checkDatabaseEmpty(result):
+            self.assertEquals(result['rows'], [])
+            self.assertEquals(result['total_rows'], 0)
+            self.assertEquals(result['offset'], 0)
+        d.addCallback(checkDatabaseEmpty)
+        d.callback(None)
+        return d
+
+    def test_listDocStartKey(self):
+        """
+        Test listDoc with a startKey.
+        """
+        d = defer.Deferred()
+        # List documents in newly created database
+        d.addCallback(lambda _: self.db.listDoc(self.db_name, startKey=2))
+        def checkDatabaseEmpty(result):
+            self.assertEquals(result['rows'], [])
+            self.assertEquals(result['total_rows'], 0)
+            self.assertEquals(result['offset'], 0)
+        d.addCallback(checkDatabaseEmpty)
+        d.callback(None)
+        return d
+
+    def test_listDocLimit(self):
+        """
+        Test listDoc with a limit.
+        """
+        d = defer.Deferred()
+        # List documents in newly created database
+        d.addCallback(lambda _: self.db.listDoc(self.db_name, limit=3))
+        def checkDatabaseEmpty(result):
+            self.assertEquals(result['rows'], [])
+            self.assertEquals(result['total_rows'], 0)
+            self.assertEquals(result['offset'], 0)
+        d.addCallback(checkDatabaseEmpty)
+        d.callback(None)
+        return d
+
+    def test_listDocMultipleArguments(self):
+        """
+        Test listDoc with all options activated.
+        """
+        d = defer.Deferred()
+        # List documents in newly created database
+        d.addCallback(lambda _: self.db.listDoc(self.db_name, limit=3, startKey=1, reverse=True))
+        def checkDatabaseEmpty(result):
+            self.assertEquals(result['rows'], [])
+            self.assertEquals(result['total_rows'], 0)
+            self.assertEquals(result['offset'], 0)
+        d.addCallback(checkDatabaseEmpty)
+        d.callback(None)
+        return d
+
+    def test_openDoc(self):
+        """
+        Test openDoc.
+        """
+        d = defer.Deferred()
+        doc_id = 'foo'
+        body = {"value": "mybody"}
+        d.addCallback(lambda _: self._saveDoc(body, doc_id))
+        d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+        def checkDoc(result):
+            self.assertEquals(result['_id'], doc_id)
+            self.assertEquals(result['value'], 'mybody')
+        d.addCallback(checkDoc)
+        d.callback(None)
+        return d
+
+    def test_saveDocWithDocId(self):
+        """
+        Test saveDoc, giving an explicit document ID.
+        """
+        d = defer.Deferred()
+        # Save simple document and check the result
+        doc_id = 'foo'
+        body = { }
+        d.addCallback(lambda _: self._saveDoc(body, doc_id))
+        d.callback(None)
+        return d
+
+    def test_saveDocWithoutDocId(self):
+        """
+        Test saveDoc without a document ID.
+        """
+        d = defer.Deferred()
+        doc_id = None
+        body = { }
+        d.addCallback(lambda _: self._saveDoc(body, doc_id))
+        d.callback(None)
+        return d
+
+    def test_saveStructuredDoc(self):
+        """
+        saveDoc should automatically serialize a structured document.
+        """
+        d = defer.Deferred()
+        doc_id = 'foo'
+        body = {"value": "mybody", "_id": doc_id}
+        d.addCallback(lambda _: self._saveDoc(body, doc_id))
+        d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+        def checkDocumentContent(result):
+            #self.assertEquals(result['_id'], "AAA")
+            self.assertEquals(result['_id'], doc_id)
+            self.assertEquals(result['value'], 'mybody')
+        d.addCallback(checkDocumentContent)
+        d.callback(None)
+        return d
+
+    def test_deleteDoc(self):
+        """
+        Test deleteDoc.
+        """
+        d = defer.Deferred()
+        doc_id = 'foo'
+        body = {"value": "mybody", "_id": doc_id}
+        d.addCallback(lambda _: self._saveDoc(body, doc_id))
+        d.addCallback(lambda _: self.db.deleteDoc(self.db_name, doc_id, self._rev))
+        def checkDocumentDeleted(result):
+            self.assertEquals(result['id'], doc_id)
+            self.assertEquals(result['ok'], True)
+        d.addCallback(checkDocumentDeleted)
+        d.callback(None)
+        return d
+    
+    def test_addAttachments(self):
+        """
+        Test addAttachments.
+        """
+        doc_id = 'foo'
+        d = defer.Deferred()
+        body = {"value": "mybody", "_id": doc_id}
+        attachments = {"file1": "value", "file2": "second value"}
+        d.addCallback(lambda _: self.db.addAttachments(body, attachments))
+        d.addCallback(lambda _: self._saveDoc(body, doc_id))
+        d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+        def checkAttachments(result):
+            self.failUnless('file1' in result["_attachments"])
+            self.failUnless('file2' in result["_attachments"])
+            self.assertEquals(result['_id'], doc_id)
+            self.assertEquals(result['value'], 'mybody')
+        d.addCallback(checkAttachments)
+        d.callback(None)
+        return d
+
+    #def test_openView(self):
+    # This is already covered by test_addViews
+    
+    def test_openViewWithKeysQuery(self):
+        """
+        Test openView handles couchdb's strange requirements for keys arguments
+        """
+        d = defer.Deferred()
+        #d = Deferred()
+        doc_id = 'foo'
+        body = {"value": "bar"}
+        view1_id = 'view1'
+        view1 = ''' function(doc) {
+        emit(doc._id, doc);
+        }'''
+        views = {view1_id: { 'map': view1 } }
+        d.addCallback(lambda _: self.db.addViews(body, views))
+        d.addCallback(lambda _: self._saveDoc(body, '_design/' + doc_id))
+        keys=[
+            {
+                'startkey': [ "a", "b", "c" ],
+                'endkey' : ["x", "y", "z" ]
+            },
+            {
+                'startkey': [ "a", "b", "c" ],
+                'endkey' : ["x", "y", "z" ]
+            }
+        ]
+        d.addCallback(lambda _: self.db.openView(self.db_name, doc_id, view1_id, keys=keys, limit=5))
+        def checkOpenView(result):
+            self.assertEquals(result["rows"], [])
+            self.assertEquals(result["total_rows"], 0)
+            self.assertEquals(result["offset"], 0)
+        d.addCallback(checkOpenView)
+        d.callback(None)
+        return d
+        
+    def test_tempView(self):
+        """
+        Test tempView.
+        """
+        d = defer.Deferred()
+        view1 = ''' function(doc) { emit(doc._id, doc); } '''
+        view1 = ''' function(doc) {
+        emit(doc._id, doc);
+        }'''
+        doc = { 'map': view1 }
+        d.addCallback(lambda _: self.db.tempView(self.db_name, doc))
+        def checkView(result):
+            self.assertEquals(result['rows'], [])
+            self.assertEquals(result['total_rows'], 0)
+            self.assertEquals(result['offset'], 0)
+        d.addCallback(checkView)
+        d.callback(None)
+        return d
+
+    def test_addViews(self):
+        """
+        Test addViews.
+        """
+        d = defer.Deferred()
+        doc_id = 'foo'
+        #d = Deferred()
+        body = {"value": "bar"}
+        view1 = ''' function(doc) {
+        emit(doc._id, doc);
+        }'''
+        view2 = ''' function(doc) {
+        emit(doc._id, doc);
+        }'''
+        views = {"view1": { 'map': view1 } , "view2": { 'map' : view2 }}
+        d.addCallback(lambda _: self.db.addViews(body, views))
+        d.addCallback(lambda _: self._saveDoc(body, '_design/' + doc_id))
+        d.addCallback(lambda _: self.db.openDoc(self.db_name, '_design/' + doc_id))
+        def checkViews(result):
+            self.failUnless(result["views"]['view1']['map'] == view1 )
+            self.failUnless(result["views"]['view2']['map'] == view2 )
+            self.assertEquals(result['_id'], '_design/' + doc_id)
+            self.assertEquals(result['value'], 'bar')
+        d.addCallback(checkViews)
+        d.addCallback(lambda _: self.db.openView(self.db_name, doc_id, 'view1'))
+        def checkOpenView(result):
+            self.assertEquals(result["rows"], [ ])
+            self.assertEquals(result["total_rows"], 0)
+            self.assertEquals(result["offset"], 0)
+        d.addCallback(checkOpenView)
+        d.addCallback(lambda _: self.db.openView(self.db_name, doc_id, 'view2'))
+        d.addCallback(checkOpenView)
+        d.callback(None)
+        return d
+
+    def test_bindToDB(self):
+        """
+        Test bindToDB, calling a bind method afterwards.
+        """
+        d = defer.Deferred()
+        doc_id = 'foo'
+        body = {"value": "bar"}
+        self.db.bindToDB(self.db_name)
+        self.bound = True
+        d.addCallback(lambda _: self._saveDoc(body, '_design/' + doc_id))
+        d.addCallback(lambda _: self.db.listDoc(self.db_name))
+        def checkViews(result):
+            self.assertEquals(result['total_rows'], 1)
+            self.assertEquals(result['offset'], 0)
+        d.addCallback(checkViews)
+        d.callback(None)
+        return d
+
+    def test_escapeId(self):
+        d = defer.Deferred()
+        doc_id = 'my doc with spaces'
+        body = {"value": "bar"}
+        d.addCallback(lambda _: self._saveDoc(body, doc_id))
+        d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+        def checkDoc(result):
+            self.assertEquals(result['_id'], doc_id)
+            self.assertEquals(result['value'], 'bar')
+        d.addCallback(checkDoc)
+        d.callback(None)
+        return d
+    
 class UnicodeTestCase(test_util.CouchDBTestCase):
 
     def setUp(self):
         test_util.CouchDBTestCase.setUp(self)
-
         d = self.db.createDB('test')
         def createCb(result):
             self.assertEquals(result, {'ok': True})

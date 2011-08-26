@@ -4,6 +4,9 @@ Implements the CouchDB API for twisted.
 
 _Enhancements_
 
+* Added support for CouchDB 1.1.0.
+* Added test cases against real CouchDB instance.
+* Upgraded client interface to reflect CouchDB API changes (count -> limit). The changes occurred in CouchDB 0.8 -> 0.9.
 * Added CouchDB authentication support (supply username and password args when instantiating)
 * Re-factored underlying HTTP transport to use Twisted Web Agent (will allow connection pooling in the future).
 * Re-factored code into formal Python package. API compatible with old package layout.

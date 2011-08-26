@@ -111,7 +111,7 @@ class CouchDB(object):
     CouchDB client: hold methods for accessing a couchDB.
     """
 
-    def __init__(self, host, port=5984, dbName=None, username=None, password=None, disable_log=False):
+    def __init__(self, host, port=5984, dbName=None, username=None, password=None, disable_log=False, version=(1,0,1)):
         """
         Initialize the client for given host.
 
@@ -154,7 +154,7 @@ class CouchDB(object):
                        host, 
                        port, 
                        dbName if dbName else '')
-
+        self.version = version
 
     def parseResult(self, result):
         """
@@ -212,6 +212,17 @@ class CouchDB(object):
         return self.get("/_all_dbs", descr='listDB').addCallback(self.parseResult)
 
 
+    def getVersion(self):
+        """
+        Returns the couchDB version.
+        """
+        # Responses: {u'couchdb': u'Welcome', u'version': u'1.1.0'}
+        d = self.get("/" , descr='version').addCallback(self.parseResult)
+        def cacheVersion (result):
+            self.version = tuple(int(_) for _ in result['version'].split('.'))
+            return result
+        return d.addCallback(cacheVersion)
+
     def infoDB(self, dbName):
         """
         Returns info about the couchDB.
@@ -224,20 +235,27 @@ class CouchDB(object):
 
     # Document operations
 
-    def listDoc(self, dbName, reverse=False, startKey=0, count=-1):
+    def listDoc(self, dbName, reverse=False, startKey=0, limit=-1, **obsolete):
         """
         List all documents in a given database.
         """
         # Responses: {u'rows': [{u'_rev': -1825937535, u'_id': u'mydoc'}],
         # u'view': u'_all_docs'}, 404 Object Not Found
+        import warnings
+        if 'count' in obsolete:
+            warnings.warn("listDoc 'count' parameter has been renamed to 'limit' to reflect "
+                          "changing couchDB api", DeprecationWarning)
+            limit = obsolete.pop('count')
+        if obsolete:
+            raise AttributeError("Unknown attribute(s): %r" % (obsolete.keys(), ))
         uri = "/%s/_all_docs" % (dbName,)
         args = {}
         if reverse:
             args["reverse"] = "true"
         if startKey > 0:
             args["startkey"] = int(startKey)
-        if count >= 0:
-            args["count"] = int(count)
+        if limit >= 0:
+            args["limit"] = int(limit)
         if args:
             uri += "?%s" % (urlencode(args),)
         return self.get(uri, descr='listDoc'
@@ -389,7 +407,12 @@ class CouchDB(object):
         # encode the rest of the values with JSON for use as query
         # arguments in the URI
         for k, v in kwargs.iteritems():
-            kwargs[k] = json.dumps(v) #couchdb requires this
+            if k == 'keys': # we do this below, for the full body
+                pass
+            else:
+                kwargs[k] = json.dumps(v)
+        if 'count' in kwargs : # we keep the paisley API, but couchdb uses limit now
+            kwargs['limit'] = kwargs.pop('count')
 
         # If there's a list of keys to send, POST the
         # query so that we can upload the keys as the body of
@@ -419,6 +442,8 @@ class CouchDB(object):
         """
         Make a temporary view on the server.
         """
+        if not isinstance(view, (str, unicode)):
+            view = json.dumps(view)
         d = self.post("/%s/_temp_view" % (dbName,), view, descr='tempView')
         return d.addCallback(self.parseResult)
 
