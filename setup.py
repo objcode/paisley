@@ -20,7 +20,7 @@ def main():
         license="MIT",
         url="http://github.com/smcq/paisley",
         download_url="http://github.com/smcq/paisley/zipball/v0.3.1",
-        py_modules=["paisley", "paisley.client", "paisley.test_paisley"],
+        packages=["paisley", "paisley.test"],
     )
 
 if __name__ == "__main__":
