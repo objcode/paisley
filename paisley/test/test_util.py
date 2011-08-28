@@ -77,6 +77,7 @@ stderr:
         line = handle.read()
         m = PORT_RE.search(line)
         if not m:
+            self.stop()
             raise Exception("Cannot find port in line %s" % line)
 
         self.port = int(m.group('port'))
