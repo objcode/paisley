@@ -111,7 +111,7 @@ class CouchDB(object):
     CouchDB client: hold methods for accessing a couchDB.
     """
 
-    def __init__(self, host, port=5984, dbName=None, username=None, password=None, disable_log=False, version=(1,0,1)):
+    def __init__(self, host, port=5984, dbName=None, username=None, password=None, disable_log=False, version=(1, 0, 1)):
         """
         Initialize the client for given host.
 

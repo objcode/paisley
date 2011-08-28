@@ -509,9 +509,9 @@ class RealCouchDBTestCase(TestCase):
         Used to clean up before running each test.
         """
         d = defer.Deferred()
-        if self.bound :
+        if self.bound:
             d.addCallback(lambda _: self.db.deleteDB())
-        else          :
+        else:
             d.addCallback(lambda _: self.db.deleteDB(self.db_name))
         def deleteCb(result):
             self.assertEquals(result, {'ok': True})
@@ -526,9 +526,9 @@ class RealCouchDBTestCase(TestCase):
         Helper method to save a document, and verify that it was successfull.
         """
         d = defer.Deferred()
-        if self.bound :
+        if self.bound:
             d.addCallback(lambda _: self.db.saveDoc(body, doc_id))
-        else          :
+        else:
             d.addCallback(lambda _: self.db.saveDoc(self.db_name, body, doc_id))
         def checkDocumentCreated(result):
             self.assertEquals(result['ok'], True)
@@ -548,7 +548,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(createCb)
         d.addCallback(lambda _: self.db.listDB())
         def listCb(result):
-            if self.db.version.__ge__((1,1,0)):
+            if self.db.version.__ge__((1, 1, 0)):
                 self.assertEquals(len(result), 3)
                 self.failUnless('_replicator' in result)
             else:
@@ -602,7 +602,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(deleteCb)
         d.addCallback(lambda _: self.db.listDB())
         def listCbAgain(result):
-            if self.db.version.__ge__((1,1,0)):
+            if self.db.version.__ge__((1, 1, 0)):
                 self.assertEquals(len(result), 2)
             else:
                 self.assertEquals(len(result), 1)
@@ -646,7 +646,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         d.addCallback(lambda _: self.db.listDB())
         def listCb(result):
-            if self.db.version.__ge__((1,1,0)):
+            if self.db.version.__ge__((1, 1, 0)):
                 self.assertEquals(len(result), 3)
                 self.failUnless('_replicator' in result)
             else:
