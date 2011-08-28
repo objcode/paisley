@@ -50,12 +50,20 @@ class CouchDBWrapper(object):
         args = ['couchdb', '-a', confPath]
         null = open('/dev/null', 'w')
         self.process = subprocess.Popen(
-            args, env=None, stdout=null, stderr=null)
+            args, env=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # find port
         logPath = os.path.join(self.tempdir, 'log', 'couch.log')
         while not os.path.exists(logPath):
-            pass
+            if self.process.poll() is not None:
+                raise Exception("""
+couchdb exited with code %d.
+stdout:
+%s
+stderr:
+%s""" % (
+                    self.process.returncode, self.process.stdout.read(),
+                    self.process.stderr.read()))
 
         while os.stat(logPath).st_size == 0:
             pass
