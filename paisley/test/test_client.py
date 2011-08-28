@@ -405,6 +405,11 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
+    def test_parseVersion(self):
+        version = self.client._parseVersion('1.1.0')
+        self.assertEquals(version, (1, 1, 0))
+        version = self.client._parseVersion('1.1.1a1162549')
+        self.assertEquals(version, (1, 1, 1))
 
 class FakeCouchDBResource(resource.Resource):
     """

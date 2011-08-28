@@ -217,11 +217,24 @@ class CouchDB(object):
         Returns the couchDB version.
         """
         # Responses: {u'couchdb': u'Welcome', u'version': u'1.1.0'}
+        # Responses: {u'couchdb': u'Welcome', u'version': u'1.1.1a1162549'}
         d = self.get("/" , descr='version').addCallback(self.parseResult)
-        def cacheVersion (result):
-            self.version = tuple(int(_) for _ in result['version'].split('.'))
+        def cacheVersion(result):
+            self.version = self._parseVersion(result['version'])
             return result
         return d.addCallback(cacheVersion)
+
+    def _parseVersion(self, versionString):
+        def onlyInt(part):
+            import re
+            intRegexp = re.compile("^(\d+)")
+            m = intRegexp.search(part)
+            if not m:
+                return None
+            return int(m.expand('\\1'))
+
+        ret = tuple(onlyInt(_) for _ in versionString.split('.'))
+        return ret
 
     def infoDB(self, dbName):
         """
