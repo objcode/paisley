@@ -26,3 +26,5 @@ This isn't under heavy maintenance by me, I only use a subset of the functionali
 
 
 For David's initial repo, see https://launchpad.net/paisley.  David has asked me to make github the official repo since we're actively keeping it up with CouchDB version bumps.
+
+testing buildbot integration
