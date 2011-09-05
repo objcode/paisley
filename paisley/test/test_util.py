@@ -81,7 +81,7 @@ stderr:
             raise Exception("Cannot find port in line %s" % line)
 
         self.port = int(m.group('port'))
-        self.db = client.CouchDB(host='localhost', port=self.port)
+        self.db = client.CouchDB(host='localhost', port=self.port, username='testpaisley', password='testpaisley')
 
     def stop(self):
         self.process.terminate()

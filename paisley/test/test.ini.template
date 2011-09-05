@@ -128,3 +128,6 @@ verify_ssl_certificates = false
 ; ssl_trusted_certificates_file = /etc/ssl/certs/ca-certificates.crt
 ; maximum peer certificate depth (must be set even if certificate validation is off)
 ssl_certificate_max_depth = 3
+
+[admins]
+testpaisley = -hashed-2f07ef57064262c2fe4540e4a099278b62182141,0b816cd603a91a48cc6634e062e9d50f
