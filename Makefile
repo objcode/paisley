@@ -12,3 +12,9 @@ pep8:
 	find paisley -name '*.py' | grep -v paisley/mapping.py | xargs scripts/pep8.py --repeat
 
 check: trial pep8
+
+testkill:
+	ps auxw | grep beam | grep paisley | cut -c10-16 | xargs kill
+
+trialall:
+	for couchdb in ~/prefix/couchdb/*; do echo $$couchdb; PATH=$$couchdb:$$PATH trial paisley; done
