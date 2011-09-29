@@ -21,6 +21,8 @@ from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 from twisted.web import resource, server
+from twisted.web._newclient import ResponseDone
+from twisted.python.failure import Failure
 
 import paisley
 
@@ -772,7 +774,7 @@ class RealCouchDBTestCase(TestCase):
         Test opening an attachment with openDoc.
         """
         attachment_name = 'bindata.dat'
-        attachment_data = ''.join(chr(n) for n in xrange(0x100)) * 2
+        attachment_data = test_util.eight_bit_test_string()
 
         doc_id = 'foo'
         body = {"value": "mybody"}
@@ -1058,3 +1060,32 @@ class UnicodeTestCase(test_util.CouchDBTestCase):
 
         d.callback(None)
         return d
+
+
+class ResponseReceiverTestCase(TestCase):
+
+    def test_utf8Receiving(self):
+        d = defer.Deferred()
+        rvr = paisley.client.ResponseReceiver(d, decode_utf8=True)
+
+        # "Internationalization" string from
+        # http://rentzsch.tumblr.com/post/9133498042/howto-use-utf-8-throughout-your-web-stack
+        data = u'\u201cI\xf1t\xebrn\xe2ti\xf4n\xe0liz\xe6ti\xf8n\u201d'
+        d.addCallback(lambda encoded_out: self.assertEqual(encoded_out, data))
+
+        for c in data.encode('utf-8'):
+            rvr.dataReceived(c)
+
+        rvr.connectionLost(Failure(ResponseDone()))
+
+    def test_8bitReceiving(self):
+        d = defer.Deferred()
+        rvr = paisley.client.ResponseReceiver(d, decode_utf8=False)
+
+        data = test_util.eight_bit_test_string()
+        d.addCallback(lambda out: self.assertEqual(out, data))
+
+        for c in data:
+            rvr.dataReceived(c)
+
+        rvr.connectionLost(Failure(ResponseDone()))

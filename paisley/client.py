@@ -10,7 +10,7 @@ CouchDB client.
 
 from paisley import pjson as json
 
-import codecs
+from encodings import utf_8
 import logging
 import new
             
@@ -87,22 +87,26 @@ class StringProducer(object):
     def stopProducing(self):
         pass
 
+
 class ResponseReceiver(Protocol):
     """
     Assembles HTTP response from return stream.
     """
     
     def __init__(self, deferred, decode_utf8):
-        self.writer = codecs.getwriter("utf_8")(StringIO()) if decode_utf8 \
-                else StringIO()
+        self.recv_chunks = []
+        self.decoder = utf_8.IncrementalDecoder() if decode_utf8 else None
         self.deferred = deferred
     
-    def dataReceived(self, bytes):
-        self.writer.write(bytes)
+    def dataReceived(self, bytes, final=False):
+        if self.decoder:
+            bytes = self.decoder.decode(bytes, final)
+        self.recv_chunks.append(bytes)
     
     def connectionLost(self, reason):
         if reason.check(ResponseDone) or reason.check(PotentialDataLoss):
-            self.deferred.callback(self.writer.getvalue())
+            self.dataReceived('', final=True)
+            self.deferred.callback(''.join(self.recv_chunks))
         else:
             self.deferred.errback(reason)
     
