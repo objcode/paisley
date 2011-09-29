@@ -1066,7 +1066,7 @@ class ResponseReceiverTestCase(TestCase):
 
     def test_utf8Receiving(self):
         d = defer.Deferred()
-        rvr = paisley.client.ResponseReceiver(d, decode_utf8=True)
+        rvr = client.ResponseReceiver(d, decode_utf8=True)
 
         # "Internationalization" string from
         # http://rentzsch.tumblr.com/post/9133498042/howto-use-utf-8-throughout-your-web-stack
@@ -1080,7 +1080,7 @@ class ResponseReceiverTestCase(TestCase):
 
     def test_8bitReceiving(self):
         d = defer.Deferred()
-        rvr = paisley.client.ResponseReceiver(d, decode_utf8=False)
+        rvr = client.ResponseReceiver(d, decode_utf8=False)
 
         data = test_util.eight_bit_test_string()
         d.addCallback(lambda out: self.assertEqual(out, data))

@@ -45,6 +45,7 @@ class TestStubChangeReceiver(unittest.TestCase):
 
 class BaseTestCase(test_util.CouchDBTestCase):
     tearing = False # set to True during teardown so we can assert
+    expect_tearing = False
 
     def setUp(self):
         test_util.CouchDBTestCase.setUp(self)
@@ -349,7 +350,7 @@ class ConnectionLostTestCase(BaseTestCase, changes.ChangeListener):
 
     def connectionLost(self, reason):
         # make sure we lost the connection before teardown
-        self.failIf(self.tearing,
+        self.failIf(self.tearing and self.expect_tearing,
             'connectionLost should be called before teardown')
 
         self.failIf(reason.check(error.ConnectionDone))
@@ -358,5 +359,6 @@ class ConnectionLostTestCase(BaseTestCase, changes.ChangeListener):
         self.failUnless(reason.check(_newclient.ResponseFailed))
 
     def testKill(self):
+        self.expect_tearing = True
         self.wrapper.process.terminate()
         return self.waitForNextCycle()
