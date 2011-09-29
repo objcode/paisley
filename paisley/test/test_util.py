@@ -105,3 +105,7 @@ class CouchDBTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.wrapper.stop()
+
+
+def eight_bit_test_string():
+    return ''.join(chr(cn) for cn in xrange(0x100)) * 2

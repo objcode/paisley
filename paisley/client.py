@@ -10,7 +10,7 @@ CouchDB client.
 
 from paisley import pjson as json
 
-import codecs
+from encodings import utf_8
 import logging
 import new
             
@@ -87,21 +87,26 @@ class StringProducer(object):
     def stopProducing(self):
         pass
 
+
 class ResponseReceiver(Protocol):
     """
     Assembles HTTP response from return stream.
     """
     
-    def __init__(self, deferred):
-        self.writer = codecs.getwriter("utf_8")(StringIO())
+    def __init__(self, deferred, decode_utf8):
+        self.recv_chunks = []
+        self.decoder = utf_8.IncrementalDecoder() if decode_utf8 else None
         self.deferred = deferred
     
-    def dataReceived(self, bytes):
-        self.writer.write(bytes)
+    def dataReceived(self, bytes, final=False):
+        if self.decoder:
+            bytes = self.decoder.decode(bytes, final)
+        self.recv_chunks.append(bytes)
     
     def connectionLost(self, reason):
         if reason.check(ResponseDone) or reason.check(PotentialDataLoss):
-            self.deferred.callback(self.writer.getvalue())
+            self.dataReceived('', final=True)
+            self.deferred.callback(''.join(self.recv_chunks))
         else:
             self.deferred.errback(reason)
     
@@ -313,7 +318,7 @@ class CouchDB(object):
         elif attachment:
             uri += "/%s" % quote(attachment)
             # No parsing
-            return  self.get(uri, descr='openDoc')
+            return self.get(uri, descr='openDoc', isJson=False)
         return self.get(uri, descr='openDoc'
             ).addCallback(self.parseResult)
 
@@ -463,14 +468,20 @@ class CouchDB(object):
 
     # Basic http methods
 
-    def _getPage(self, uri, **kwargs):
+    def _getPage(self, uri, method="GET", postdata=None, headers=None,
+            isJson=True):
         """
         C{getPage}-like.
         """
         
         def cb_recv_resp(response):
             d_resp_recvd = Deferred()
-            response.deliverBody(ResponseReceiver(d_resp_recvd))
+            content_type = response.headers.getRawHeaders('Content-Type',
+                    [''])[0].lower().strip()
+            decode_utf8 = 'charset=utf-8' in content_type or \
+                    content_type == 'application/json'
+            response.deliverBody(ResponseReceiver(d_resp_recvd,
+                decode_utf8=decode_utf8))
             return d_resp_recvd.addCallback(cb_process_resp, response)
         
         def cb_process_resp(body, response):
@@ -486,40 +497,32 @@ class CouchDB(object):
         uurl = unicode(self.url_template % (uri, ))
         url = uurl.encode('utf-8')
         
-        if not kwargs.has_key("headers"):
-            kwargs["headers"] = {}
+        if not headers:
+            headers = {}
         
-        kwargs["headers"]["Accept"] = ["application/json"]
-        kwargs["headers"]["Content-Type"] = ["application/json"]
-        
-        if not kwargs.has_key("method"):
-            kwargs["method"] == "GET"
+        if isJson:
+            headers["Accept"] = ["application/json"]
+            headers["Content-Type"] = ["application/json"]
         
         if self.username:
-            kwargs["headers"]["Authorization"] = ["Basic %s" % b64encode("%s:%s" % (self.username, self.password))]
+            headers["Authorization"] = ["Basic %s" % b64encode("%s:%s" % (self.username, self.password))]
         
-        if kwargs.has_key("postdata"):
-            body = StringProducer(kwargs["postdata"])
-        else:
-            body = None
+        body = StringProducer(postdata) if postdata else None
         
-        d = self.client.request(kwargs["method"],
-                                url,
-                                Headers(kwargs["headers"]),
-                                body)
+        d = self.client.request(method, url, Headers(headers), body)
         
         d.addCallback(cb_recv_resp)
         
         return d
 
 
-    def get(self, uri, descr=''):
+    def get(self, uri, descr='', isJson=True):
         """
         Execute a C{GET} at C{uri}.
         """
         self.log.debug("[%s:%s%s] GET %s",
                        self.host, self.port, short_print(uri), descr)
-        return self._getPage(uri, method="GET")
+        return self._getPage(uri, method="GET", isJson=isJson)
 
 
     def post(self, uri, body, descr=''):
