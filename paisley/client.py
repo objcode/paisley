@@ -18,11 +18,6 @@ from StringIO import StringIO
 from urllib import urlencode, quote
 from zope.interface import implements
 
-from twisted.internet import reactor
-from twisted.web._newclient import ResponseDone
-from twisted.web import error as tw_error
-from twisted.web.client import Agent
-from twisted.web.http import PotentialDataLoss
 from twisted.web.http_headers import Headers
 from twisted.web.iweb import IBodyProducer
 
@@ -104,6 +99,10 @@ class ResponseReceiver(Protocol):
         self.recv_chunks.append(bytes)
     
     def connectionLost(self, reason):
+        # _newclient and http import reactor
+        from twisted.web._newclient import ResponseDone
+        from twisted.web.http import PotentialDataLoss
+
         if reason.check(ResponseDone) or reason.check(PotentialDataLoss):
             self.dataReceived('', final=True)
             self.deferred.callback(''.join(self.recv_chunks))
@@ -130,6 +129,9 @@ class CouchDB(object):
             this one by default.
         @type dbName: C{str}
         """
+        from twisted.internet import reactor
+        # t.w.c imports reactor
+        from twisted.web.client import Agent
         self.client = Agent(reactor)
         self.host = host
         self.port = int(port)
@@ -485,6 +487,9 @@ class CouchDB(object):
             return d_resp_recvd.addCallback(cb_process_resp, response)
         
         def cb_process_resp(body, response):
+            # twisted.web.error imports reactor
+            from twisted.web import error as tw_error
+
             # Emulate HTTPClientFactory and raise t.w.e.Error
             # and PageRedirect if we have errors.
             if response.code > 299 and response.code < 400:
