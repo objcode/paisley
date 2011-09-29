@@ -477,10 +477,11 @@ class CouchDB(object):
         def cb_recv_resp(response):
             d_resp_recvd = Deferred()
             content_type = response.headers.getRawHeaders('Content-Type',
-                    [''])[0]
+                    [''])[0].lower().strip()
+            decode_utf8 = 'charset=utf-8' in content_type or \
+                    content_type == 'application/json'
             response.deliverBody(ResponseReceiver(d_resp_recvd,
-                decode_utf8=content_type in
-                    ['text/plain;charset=utf-8', 'application/json']))
+                decode_utf8=decode_utf8))
             return d_resp_recvd.addCallback(cb_process_resp, response)
         
         def cb_process_resp(body, response):
