@@ -463,7 +463,7 @@ class CouchDB(object):
 
     # Basic http methods
 
-    def _getPage(self, uri, **kwargs):
+    def _getPage(self, uri, method="GET", postdata=None, headers=None):
         """
         C{getPage}-like.
         """
@@ -486,27 +486,18 @@ class CouchDB(object):
         uurl = unicode(self.url_template % (uri, ))
         url = uurl.encode('utf-8')
         
-        if not kwargs.has_key("headers"):
-            kwargs["headers"] = {}
+        if not headers:
+            headers = {}
         
-        kwargs["headers"]["Accept"] = ["application/json"]
-        kwargs["headers"]["Content-Type"] = ["application/json"]
-        
-        if not kwargs.has_key("method"):
-            kwargs["method"] == "GET"
+        headers["Accept"] = ["application/json"]
+        headers["Content-Type"] = ["application/json"]
         
         if self.username:
-            kwargs["headers"]["Authorization"] = ["Basic %s" % b64encode("%s:%s" % (self.username, self.password))]
+            headers["Authorization"] = ["Basic %s" % b64encode("%s:%s" % (self.username, self.password))]
         
-        if kwargs.has_key("postdata"):
-            body = StringProducer(kwargs["postdata"])
-        else:
-            body = None
+        body = StringProducer(postdata) if postdata else None
         
-        d = self.client.request(kwargs["method"],
-                                url,
-                                Headers(kwargs["headers"]),
-                                body)
+        d = self.client.request(method, url, Headers(headers), body)
         
         d.addCallback(cb_recv_resp)
         
