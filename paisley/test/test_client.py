@@ -766,6 +766,24 @@ class RealCouchDBTestCase(TestCase):
         d.callback(None)
         return d
 
+    @defer.inlineCallbacks
+    def test_openDocAttachment(self):
+        """
+        Test opening an attachment with openDoc.
+        """
+        attachment_name = 'bindata.dat'
+        attachment_data = ''.join(chr(n) for n in xrange(0x100)) * 2
+
+        doc_id = 'foo'
+        body = {"value": "mybody"}
+        self.db.addAttachments(body, {attachment_name: attachment_data})
+
+        yield self._saveDoc(body, doc_id)
+
+        retrieved_data = yield self.db.openDoc(self.db_name, doc_id,
+            attachment=attachment_name)
+        self.assertEquals(retrieved_data, attachment_data)
+
     def test_saveDocWithDocId(self):
         """
         Test saveDoc, giving an explicit document ID.
