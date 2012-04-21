@@ -26,7 +26,7 @@ from twisted.python.failure import Failure
 
 from paisley import client
 
-from paisley.test import test_util
+from paisley.test import util
 
 class TestableCouchDB(client.CouchDB):
     """
@@ -468,7 +468,7 @@ class ConnectedCouchDBTestCase(TestCase):
 class RealCouchDBTestCase(TestCase):
     
     def setUp(self):
-        self.wrapper = test_util.CouchDBWrapper()
+        self.wrapper = util.CouchDBWrapper()
         self.wrapper.start()
         self.db = self.wrapper.db
         self.bound = False
@@ -774,7 +774,7 @@ class RealCouchDBTestCase(TestCase):
         Test opening an attachment with openDoc.
         """
         attachment_name = 'bindata.dat'
-        attachment_data = test_util.eight_bit_test_string()
+        attachment_data = util.eight_bit_test_string()
 
         doc_id = 'foo'
         body = {"value": "mybody"}
@@ -984,10 +984,10 @@ class RealCouchDBTestCase(TestCase):
         d.callback(None)
         return d
     
-class UnicodeTestCase(test_util.CouchDBTestCase):
+class UnicodeTestCase(util.CouchDBTestCase):
 
     def setUp(self):
-        test_util.CouchDBTestCase.setUp(self)
+        util.CouchDBTestCase.setUp(self)
         d = self.db.createDB('test')
         def createCb(result):
             self.assertEquals(result, {'ok': True})
@@ -999,7 +999,7 @@ class UnicodeTestCase(test_util.CouchDBTestCase):
         def deleteCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(deleteCb)
-        d.addCallback(lambda _: test_util.CouchDBTestCase.tearDown(self))
+        d.addCallback(lambda _: util.CouchDBTestCase.tearDown(self))
         return d
 
     def testUnicodeContents(self):
@@ -1082,7 +1082,7 @@ class ResponseReceiverTestCase(TestCase):
         d = defer.Deferred()
         rvr = client.ResponseReceiver(d, decode_utf8=False)
 
-        data = test_util.eight_bit_test_string()
+        data = util.eight_bit_test_string()
         d.addCallback(lambda out: self.assertEqual(out, data))
 
         for c in data:

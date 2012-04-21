@@ -11,7 +11,7 @@ Tests for the object mapping view API.
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import succeed
 
-from paisley.test import test_util
+from paisley.test import util
 
 from paisley.views import View
 
@@ -83,10 +83,10 @@ class StubViewTests(CommonTestCase, TestCase):
             }})
 
 
-class RealViewTests(CommonTestCase, test_util.CouchDBTestCase):
+class RealViewTests(CommonTestCase, util.CouchDBTestCase):
 
     def setUp(self):
-        test_util.CouchDBTestCase.setUp(self)
+        util.CouchDBTestCase.setUp(self)
 
         d = self.db.createDB('test')
 

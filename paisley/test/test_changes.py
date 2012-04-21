@@ -11,7 +11,7 @@ from twisted.trial import unittest
 
 from paisley import client, changes
 
-from paisley.test import test_util
+from paisley.test import util
 
 
 class FakeNotifier(object):
@@ -43,16 +43,16 @@ class TestStubChangeReceiver(unittest.TestCase):
         self.assertEquals(notifier.changes[2]["deleted"], True)
 
 
-class BaseTestCase(test_util.CouchDBTestCase):
+class BaseTestCase(util.CouchDBTestCase):
     tearing = False # set to True during teardown so we can assert
     expect_tearing = False
 
     def setUp(self):
-        test_util.CouchDBTestCase.setUp(self)
+        util.CouchDBTestCase.setUp(self)
 
     def tearDown(self):
         self.tearing = True
-        test_util.CouchDBTestCase.tearDown(self)
+        util.CouchDBTestCase.tearDown(self)
 
     def waitForNextCycle(self):
         # Wait for the reactor to cycle.
