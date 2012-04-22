@@ -61,6 +61,7 @@ def _get_loads(strict=STRICT):
 
     return loads
 
+
 def _get_dumps(strict=STRICT):
     if not strict:
         try:

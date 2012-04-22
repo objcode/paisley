@@ -8,7 +8,9 @@
 Object mapping view API.
 """
 
+
 class View(object):
+
     def __init__(self, couch, dbName, docId, viewId, objectFactory, **options):
         """
         objectFactory should implement fromDict, taking a dictionary containing

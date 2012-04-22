@@ -25,6 +25,7 @@ from paisley import client
 
 from paisley.test import util
 
+
 class TestableCouchDB(client.CouchDB):
     """
     A couchdb client that can be tested: override the getPage method.
@@ -32,14 +33,14 @@ class TestableCouchDB(client.CouchDB):
 
     def __init__(self, *args, **kwargs):
         """
-        Initialize the client: forward parameters, and create attributes used in tests.
+        Initialize the client: forward parameters, and create attributes used
+        in tests.
         """
         client.CouchDB.__init__(self, *args, **kwargs)
         self.deferred = Deferred()
         self.uri = None
         self.kwargs = None
         self.called = False
-
 
     def _getPage(self, uri, *args, **kwargs):
         """
@@ -51,7 +52,6 @@ class TestableCouchDB(client.CouchDB):
         self.uri = uri
         self.kwargs = kwargs
         return self.deferred
-
 
 
 class CouchDBTestCase(TestCase):
@@ -88,7 +88,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client_auth.username, "test")
         self.assertEquals(self.client_auth.password, "testpass")
 
-
     def test_get(self):
         """
         Test get method.
@@ -96,7 +95,6 @@ class CouchDBTestCase(TestCase):
         self.client.get("foo")
         self.assertEquals(self.client.uri, "foo")
         self.assertEquals(self.client.kwargs["method"], "GET")
-
 
     def test_post(self):
         """
@@ -107,7 +105,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "POST")
         self.assertEquals(self.client.kwargs["postdata"], "egg")
 
-
     def test_put(self):
         """
         Test put method.
@@ -117,7 +114,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "PUT")
         self.assertEquals(self.client.kwargs["postdata"], "egg")
 
-
     def test_delete(self):
         """
         Test get method.
@@ -126,16 +122,15 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.uri, "foo")
         self.assertEquals(self.client.kwargs["method"], "DELETE")
 
-
     def _checkParseDeferred(self, d):
         """
         Utility function to test that a Deferred is called with JSON parsing.
         """
         d.callback('["foo"]')
+
         def cb(res):
             self.assertEquals(res, ["foo"])
         return d.addCallback(cb)
-
 
     def test_createDB(self):
         """
@@ -146,7 +141,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "PUT")
         return self._checkParseDeferred(d)
 
-
     def test_deleteDB(self):
         """
         Test deleteDB: this should C{DELETE} the DB name.
@@ -155,7 +149,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.uri, "/mydb/")
         self.assertEquals(self.client.kwargs["method"], "DELETE")
         return self._checkParseDeferred(d)
-
 
     def test_listDB(self):
         """
@@ -166,7 +159,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
-
     def test_infoDB(self):
         """
         Test infoDB: this should C{GET} the DB name.
@@ -175,7 +167,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.uri, "/mydb/")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
-
 
     def test_listDoc(self):
         """
@@ -186,7 +177,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
-
     def test_listDocReversed(self):
         """
         Test listDoc reversed.
@@ -195,7 +185,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.uri, "/mydb/_all_docs?reverse=true")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
-
 
     def test_listDocStartKey(self):
         """
@@ -206,7 +195,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
-
     def test_listDocLimit(self):
         """
         Test listDoc with a limit.
@@ -216,16 +204,15 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
-
     def test_listDocMultipleArguments(self):
         """
         Test listDoc with all options activated.
         """
         d = self.client.listDoc("mydb", limit=3, startKey=1, reverse=True)
-        self.assertEquals(self.client.uri, "/mydb/_all_docs?startkey=1&limit=3&reverse=true")
+        self.assertEquals(self.client.uri,
+            "/mydb/_all_docs?startkey=1&limit=3&reverse=true")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
-
 
     def test_openDoc(self):
         """
@@ -236,7 +223,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
-
     def test_openDocAtRevision(self):
         """
         Test openDoc with a specific revision.
@@ -246,7 +232,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
 
-
     def test_openDocWithRevisionHistory(self):
         """
         Test openDoc with revision history.
@@ -255,7 +240,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.uri, "/mydb/mydoc?full=true")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
-
 
     def test_openDocAttachment(self):
         """
@@ -268,7 +252,6 @@ class CouchDBTestCase(TestCase):
         d.callback("test")
         return d.addCallback(self.assertEquals, "test")
 
-
     def test_saveDocWithDocId(self):
         """
         Test saveDoc, giving an explicit document ID.
@@ -277,7 +260,6 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.uri, "/mydb/mydoc")
         self.assertEquals(self.client.kwargs["method"], "PUT")
         return self._checkParseDeferred(d)
-
 
     def test_saveDocWithoutDocId(self):
         """
@@ -288,16 +270,15 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "POST")
         return self._checkParseDeferred(d)
 
-
     def test_saveStructuredDoc(self):
         """
         saveDoc should automatically serialize a structured document.
         """
-        d = self.client.saveDoc("mydb", {"value": "mybody", "_id": "foo"}, "mydoc")
+        d = self.client.saveDoc("mydb", {"value": "mybody", "_id": "foo"},
+            "mydoc")
         self.assertEquals(self.client.uri, "/mydb/mydoc")
         self.assertEquals(self.client.kwargs["method"], "PUT")
         return self._checkParseDeferred(d)
-
 
     def test_deleteDoc(self):
         """
@@ -308,27 +289,26 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "DELETE")
         return self._checkParseDeferred(d)
 
-
     def test_addAttachments(self):
         """
         Test addAttachments.
         """
         doc = {"value": "bar"}
-        self.client.addAttachments(doc, {"file1": "value", "file2": "second value"})
+        self.client.addAttachments(doc,
+            {"file1": "value", "file2": "second value"})
         self.assertEquals(doc["_attachments"],
             {'file2': {'data': 'c2Vjb25kIHZhbHVl', 'type': 'base64'},
              'file1': {'data': 'dmFsdWU=', 'type': 'base64'}})
-
 
     def test_openView(self):
         """
         Test openView.
         """
         d = self.client.openView("mydb", "viewdoc", "myview")
-        self.assertEquals(self.client.uri, "/mydb/_design/viewdoc/_view/myview?")
+        self.assertEquals(self.client.uri,
+            "/mydb/_design/viewdoc/_view/myview?")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
-
 
     def test_openViewWithQuery(self):
         """
@@ -358,11 +338,12 @@ class CouchDBTestCase(TestCase):
         d = self.client.openView("mydb2",
                                  "viewdoc2",
                                  "myview2",
-                                 keys=[1,3,4, "hello, world", {1: 5}],
+                                 keys=[1, 3, 4, "hello, world", {1: 5}],
                                  limit=5)
         self.assertEquals(self.client.kwargs["method"], "POST")
         self.failUnless(
-            self.client.uri.startswith('/mydb2/_design/viewdoc2/_view/myview2'))
+            self.client.uri.startswith(
+                '/mydb2/_design/viewdoc2/_view/myview2'))
         query = cgi.parse_qs(self.client.uri.split('?', 1)[-1])
         self.assertEquals(query, dict(limit=['5']))
         self.assertEquals(self.client.kwargs['postdata'],
@@ -378,15 +359,14 @@ class CouchDBTestCase(TestCase):
         self.assertEquals(self.client.kwargs["method"], "POST")
         return self._checkParseDeferred(d)
 
-
     def test_addViews(self):
         """
         Test addViews.
         """
         doc = {"value": "bar"}
         self.client.addViews(doc, {"view1": "js code 1", "view2": "js code 2"})
-        self.assertEquals(doc["views"], {"view1": "js code 1", "view2": "js code 2"})
-
+        self.assertEquals(doc["views"],
+            {"view1": "js code 1", "view2": "js code 2"})
 
     def test_bindToDB(self):
         """
@@ -410,6 +390,7 @@ class CouchDBTestCase(TestCase):
         version = self.client._parseVersion('1.1.1a1162549')
         self.assertEquals(version, (1, 1, 1))
 
+
 class FakeCouchDBResource(resource.Resource):
     """
     Fake a couchDB resource.
@@ -425,13 +406,11 @@ class FakeCouchDBResource(resource.Resource):
         """
         return self
 
-
     def render(self, request):
         """
         Return C{result}.
         """
         return self.result
-
 
 
 class ConnectedCouchDBTestCase(TestCase):
@@ -449,7 +428,6 @@ class ConnectedCouchDBTestCase(TestCase):
         self.addCleanup(port.stopListening)
         self.client = client.CouchDB("127.0.0.1", port.getHost().port)
 
-
     def test_createDB(self):
         """
         Test listDB.
@@ -457,10 +435,12 @@ class ConnectedCouchDBTestCase(TestCase):
         data = [u"mydb"]
         self.resource.result = json.dumps(data)
         d = self.client.listDB()
+
         def cb(result):
             self.assertEquals(result, data)
         d.addCallback(cb)
         return d
+
 
 class RealCouchDBTestCase(TestCase):
 
@@ -478,16 +458,18 @@ class RealCouchDBTestCase(TestCase):
 
     def _resetDatabase(self):
         """
-        Helper method to create an empty test database, deleting the existing one if required.
-        Used to clean up before running each test.
+        Helper method to create an empty test database, deleting the existing
+        one if required.  Used to clean up before running each test.
         """
         d = defer.Deferred()
         d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
         d.addCallback(lambda _: self.db.createDB(self.db_name))
+
         def createOkCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(createOkCb)
         d.addCallback(lambda _: self.db.infoDB(self.db_name))
+
         def checkInfoNewDatabase(result):
             self.assertEquals(result['update_seq'], 0)
             self.assertEquals(result['purge_seq'], 0)
@@ -512,8 +494,10 @@ class RealCouchDBTestCase(TestCase):
             d.addCallback(lambda _: self.db.deleteDB())
         else:
             d.addCallback(lambda _: self.db.deleteDB(self.db_name))
+
         def deleteCb(result):
             self.assertEquals(result, {'ok': True})
+
         def deleteFailedCb(failure):
             pass
         d.addCallbacks(deleteCb, deleteFailedCb)
@@ -528,10 +512,13 @@ class RealCouchDBTestCase(TestCase):
         if self.bound:
             d.addCallback(lambda _: self.db.saveDoc(body, doc_id))
         else:
-            d.addCallback(lambda _: self.db.saveDoc(self.db_name, body, doc_id))
+            d.addCallback(lambda _:
+                self.db.saveDoc(self.db_name, body, doc_id))
+
         def checkDocumentCreated(result):
             self.assertEquals(result['ok'], True)
-            if doc_id != None : self.assertEquals(result['id'], doc_id)
+            if doc_id != None:
+                self.assertEquals(result['id'], doc_id)
             self._rev = result['rev']
         d.addCallback(checkDocumentCreated)
         d.callback(None)
@@ -542,10 +529,12 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
         d.addCallback(lambda _: self.db.getVersion())
         d.addCallback(lambda _: self.db.createDB('test'))
+
         def createCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(createCb)
         d.addCallback(lambda _: self.db.listDB())
+
         def listCb(result):
             if self.db.version.__ge__((1, 1, 0)):
                 self.assertEquals(len(result), 3)
@@ -556,6 +545,7 @@ class RealCouchDBTestCase(TestCase):
             self.failUnless('_users' in result)
         d.addCallback(listCb)
         d.addCallback(lambda _: self.db.saveDoc('test', {'number': 1}, '1'))
+
         def saveDoc(result):
             self.assertEquals(result[u'ok'], True)
             self.assertEquals(result[u'id'], u'1')
@@ -563,12 +553,15 @@ class RealCouchDBTestCase(TestCase):
             self.doc_rev = result[u'rev']
         d.addCallback(saveDoc)
         doc = {}
-        self.db.addViews(doc, {'test': {'map': 'function (doc) { emit(doc.number, doc) }'}})
+        self.db.addViews(doc, {'test':
+            {'map': 'function (doc) { emit(doc.number, doc) }'}})
         d.addCallback(lambda _: self.db.saveDoc('test', doc, '_design/test'))
+
         def addViewCb(result):
             self.assertEquals(result[u'ok'], True)
         d.addCallback(addViewCb)
         d.addCallback(lambda _: self.db.openView('test', 'test', 'test'))
+
         def openView1Cb(result):
             self.assertEquals(result[u'total_rows'], 1)
             self.assertEquals(result[u'offset'], 0)
@@ -576,9 +569,12 @@ class RealCouchDBTestCase(TestCase):
             self.assertEquals(result[u'rows'][0][u'key'], 1)
             self.assertEquals(result[u'rows'][0][u'value'][u'_id'], u'1')
             self.assertEquals(result[u'rows'][0][u'value'][u'number'], 1)
-            self.assertEquals(result[u'rows'][0][u'value'][u'_rev'], self.doc_rev)
+            self.assertEquals(result[u'rows'][0][u'value'][u'_rev'],
+                self.doc_rev)
         d.addCallback(openView1Cb)
-        d.addCallback(lambda _: self.db.openView('test', 'test', 'test', keys = [1]))
+        d.addCallback(lambda _:
+            self.db.openView('test', 'test', 'test', keys=[1]))
+
         def openView2Cb(result):
             self.assertEquals(result[u'total_rows'], 1)
             self.assertEquals(result[u'offset'], 0)
@@ -586,9 +582,12 @@ class RealCouchDBTestCase(TestCase):
             self.assertEquals(result[u'rows'][0][u'key'], 1)
             self.assertEquals(result[u'rows'][0][u'value'][u'_id'], u'1')
             self.assertEquals(result[u'rows'][0][u'value'][u'number'], 1)
-            self.assertEquals(result[u'rows'][0][u'value'][u'_rev'], self.doc_rev)
+            self.assertEquals(result[u'rows'][0][u'value'][u'_rev'],
+                self.doc_rev)
         d.addCallback(openView2Cb)
-        d.addCallback(lambda _: self.db.openView('test', 'test', 'test', keys = [0]))
+        d.addCallback(lambda _:
+            self.db.openView('test', 'test', 'test', keys = [0]))
+
         def openView3Cb(result):
             self.assertEquals(result[u'total_rows'], 1)
             self.assertEquals(result[u'offset'], 0)
@@ -596,10 +595,12 @@ class RealCouchDBTestCase(TestCase):
             self.assertEquals(result[u'rows'], [])
         d.addCallback(openView3Cb)
         d.addCallback(lambda _: self.db.deleteDB('test'))
+
         def deleteCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(deleteCb)
         d.addCallback(lambda _: self.db.listDB())
+
         def listCbAgain(result):
             if self.db.version.__ge__((1, 1, 0)):
                 self.assertEquals(len(result), 2)
@@ -620,6 +621,7 @@ class RealCouchDBTestCase(TestCase):
         #   specifically testing the creation, we need to delete it first
         d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
         d.addCallback(lambda _: self.db.createDB(self.db_name))
+
         def createCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(createCb)
@@ -632,6 +634,7 @@ class RealCouchDBTestCase(TestCase):
         """
         d = defer.Deferred()
         d.addCallback(lambda _: self.db.deleteDB(self.db_name))
+
         def deleteCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(deleteCb)
@@ -644,6 +647,7 @@ class RealCouchDBTestCase(TestCase):
         """
         d = defer.Deferred()
         d.addCallback(lambda _: self.db.listDB())
+
         def listCb(result):
             if self.db.version.__ge__((1, 1, 0)):
                 self.assertEquals(len(result), 3)
@@ -663,6 +667,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # Get info about newly created database
         d.addCallback(lambda _: self.db.infoDB(self.db_name))
+
         def checkInfoNewDatabase(result):
             self.assertEquals(result['update_seq'], 0)
             self.assertEquals(result['purge_seq'], 0)
@@ -681,6 +686,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name))
+
         def checkDatabaseEmpty(result):
             self.assertEquals(result['rows'], [])
             self.assertEquals(result['total_rows'], 0)
@@ -696,6 +702,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name, reverse=True))
+
         def checkDatabaseEmpty(result):
             self.assertEquals(result['rows'], [])
             self.assertEquals(result['total_rows'], 0)
@@ -711,6 +718,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name, startKey=2))
+
         def checkDatabaseEmpty(result):
             self.assertEquals(result['rows'], [])
             self.assertEquals(result['total_rows'], 0)
@@ -726,6 +734,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name, limit=3))
+
         def checkDatabaseEmpty(result):
             self.assertEquals(result['rows'], [])
             self.assertEquals(result['total_rows'], 0)
@@ -740,7 +749,9 @@ class RealCouchDBTestCase(TestCase):
         """
         d = defer.Deferred()
         # List documents in newly created database
-        d.addCallback(lambda _: self.db.listDoc(self.db_name, limit=3, startKey=1, reverse=True))
+        d.addCallback(lambda _:
+            self.db.listDoc(self.db_name, limit=3, startKey=1, reverse=True))
+
         def checkDatabaseEmpty(result):
             self.assertEquals(result['rows'], [])
             self.assertEquals(result['total_rows'], 0)
@@ -758,6 +769,7 @@ class RealCouchDBTestCase(TestCase):
         body = {"value": "mybody"}
         d.addCallback(lambda _: self._saveDoc(body, doc_id))
         d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+
         def checkDoc(result):
             self.assertEquals(result['_id'], doc_id)
             self.assertEquals(result['value'], 'mybody')
@@ -790,7 +802,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # Save simple document and check the result
         doc_id = 'foo'
-        body = { }
+        body = {}
         d.addCallback(lambda _: self._saveDoc(body, doc_id))
         d.callback(None)
         return d
@@ -801,7 +813,7 @@ class RealCouchDBTestCase(TestCase):
         """
         d = defer.Deferred()
         doc_id = None
-        body = { }
+        body = {}
         d.addCallback(lambda _: self._saveDoc(body, doc_id))
         d.callback(None)
         return d
@@ -815,6 +827,7 @@ class RealCouchDBTestCase(TestCase):
         body = {"value": "mybody", "_id": doc_id}
         d.addCallback(lambda _: self._saveDoc(body, doc_id))
         d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+
         def checkDocumentContent(result):
             #self.assertEquals(result['_id'], "AAA")
             self.assertEquals(result['_id'], doc_id)
@@ -831,7 +844,9 @@ class RealCouchDBTestCase(TestCase):
         doc_id = 'foo'
         body = {"value": "mybody", "_id": doc_id}
         d.addCallback(lambda _: self._saveDoc(body, doc_id))
-        d.addCallback(lambda _: self.db.deleteDoc(self.db_name, doc_id, self._rev))
+        d.addCallback(lambda _:
+            self.db.deleteDoc(self.db_name, doc_id, self._rev))
+
         def checkDocumentDeleted(result):
             self.assertEquals(result['id'], doc_id)
             self.assertEquals(result['ok'], True)
@@ -850,6 +865,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(lambda _: self.db.addAttachments(body, attachments))
         d.addCallback(lambda _: self._saveDoc(body, doc_id))
         d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+
         def checkAttachments(result):
             self.failUnless('file1' in result["_attachments"])
             self.failUnless('file2' in result["_attachments"])
@@ -874,20 +890,22 @@ class RealCouchDBTestCase(TestCase):
         view1 = ''' function(doc) {
         emit(doc._id, doc);
         }'''
-        views = {view1_id: { 'map': view1 } }
+        views = {view1_id: {'map': view1}}
         d.addCallback(lambda _: self.db.addViews(body, views))
         d.addCallback(lambda _: self._saveDoc(body, '_design/' + doc_id))
         keys=[
             {
-                'startkey': [ "a", "b", "c" ],
-                'endkey' : ["x", "y", "z" ]
+                'startkey': ["a", "b", "c"],
+                'endkey': ["x", "y", "z"],
             },
             {
-                'startkey': [ "a", "b", "c" ],
-                'endkey' : ["x", "y", "z" ]
-            }
+                'startkey': ["a", "b", "c"],
+                'endkey': ["x", "y", "z"],
+            },
         ]
-        d.addCallback(lambda _: self.db.openView(self.db_name, doc_id, view1_id, keys=keys, limit=5))
+        d.addCallback(lambda _: self.db.openView(
+            self.db_name, doc_id, view1_id, keys=keys, limit=5))
+
         def checkOpenView(result):
             self.assertEquals(result["rows"], [])
             self.assertEquals(result["total_rows"], 0)
@@ -905,8 +923,9 @@ class RealCouchDBTestCase(TestCase):
         view1 = ''' function(doc) {
         emit(doc._id, doc);
         }'''
-        doc = { 'map': view1 }
+        doc = {'map': view1}
         d.addCallback(lambda _: self.db.tempView(self.db_name, doc))
+
         def checkView(result):
             self.assertEquals(result['rows'], [])
             self.assertEquals(result['total_rows'], 0)
@@ -929,23 +948,28 @@ class RealCouchDBTestCase(TestCase):
         view2 = ''' function(doc) {
         emit(doc._id, doc);
         }'''
-        views = {"view1": { 'map': view1 } , "view2": { 'map' : view2 }}
+        views = {"view1": {'map': view1}, "view2": {'map': view2}}
         d.addCallback(lambda _: self.db.addViews(body, views))
         d.addCallback(lambda _: self._saveDoc(body, '_design/' + doc_id))
-        d.addCallback(lambda _: self.db.openDoc(self.db_name, '_design/' + doc_id))
+        d.addCallback(lambda _:
+            self.db.openDoc(self.db_name, '_design/' + doc_id))
+
         def checkViews(result):
-            self.failUnless(result["views"]['view1']['map'] == view1 )
-            self.failUnless(result["views"]['view2']['map'] == view2 )
+            self.failUnless(result["views"]['view1']['map'] == view1)
+            self.failUnless(result["views"]['view2']['map'] == view2)
             self.assertEquals(result['_id'], '_design/' + doc_id)
             self.assertEquals(result['value'], 'bar')
         d.addCallback(checkViews)
-        d.addCallback(lambda _: self.db.openView(self.db_name, doc_id, 'view1'))
+        d.addCallback(lambda _:
+            self.db.openView(self.db_name, doc_id, 'view1'))
+
         def checkOpenView(result):
-            self.assertEquals(result["rows"], [ ])
+            self.assertEquals(result["rows"], [])
             self.assertEquals(result["total_rows"], 0)
             self.assertEquals(result["offset"], 0)
         d.addCallback(checkOpenView)
-        d.addCallback(lambda _: self.db.openView(self.db_name, doc_id, 'view2'))
+        d.addCallback(lambda _:
+            self.db.openView(self.db_name, doc_id, 'view2'))
         d.addCallback(checkOpenView)
         d.callback(None)
         return d
@@ -961,6 +985,7 @@ class RealCouchDBTestCase(TestCase):
         self.bound = True
         d.addCallback(lambda _: self._saveDoc(body, '_design/' + doc_id))
         d.addCallback(lambda _: self.db.listDoc(self.db_name))
+
         def checkViews(result):
             self.assertEquals(result['total_rows'], 1)
             self.assertEquals(result['offset'], 0)
@@ -974,6 +999,7 @@ class RealCouchDBTestCase(TestCase):
         body = {"value": "bar"}
         d.addCallback(lambda _: self._saveDoc(body, doc_id))
         d.addCallback(lambda _: self.db.openDoc(self.db_name, doc_id))
+
         def checkDoc(result):
             self.assertEquals(result['_id'], doc_id)
             self.assertEquals(result['value'], 'bar')
@@ -981,11 +1007,13 @@ class RealCouchDBTestCase(TestCase):
         d.callback(None)
         return d
 
+
 class UnicodeTestCase(util.CouchDBTestCase):
 
     def setUp(self):
         util.CouchDBTestCase.setUp(self)
         d = self.db.createDB('test')
+
         def createCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(createCb)
@@ -993,6 +1021,7 @@ class UnicodeTestCase(util.CouchDBTestCase):
 
     def tearDown(self):
         d = self.db.deleteDB('test')
+
         def deleteCb(result):
             self.assertEquals(result, {'ok': True})
         d.addCallback(deleteCb)
@@ -1009,6 +1038,7 @@ class UnicodeTestCase(util.CouchDBTestCase):
             name: 'name',
             }))
         d.addCallback(lambda r: self.db.openDoc('test', r['id']))
+
         def check(r):
             self.assertEquals(r['name'], name)
             self.assertEquals(r[name], u'name')
