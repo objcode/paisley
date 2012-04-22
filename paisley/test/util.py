@@ -106,6 +106,27 @@ class CouchDBTestCase(unittest.TestCase):
     def tearDown(self):
         self.wrapper.stop()
 
+    # helper callbacks
+    def checkDatabaseEmpty(self, result):
+        self.assertEquals(result['rows'], [])
+        self.assertEquals(result['total_rows'], 0)
+        self.assertEquals(result['offset'], 0)
+
+    def checkInfoNewDatabase(self, result):
+        self.assertEquals(result['update_seq'], 0)
+        self.assertEquals(result['purge_seq'], 0)
+        self.assertEquals(result['doc_count'], 0)
+        self.assertEquals(result['db_name'], 'test')
+        self.assertEquals(result['doc_del_count'], 0)
+        self.assertEquals(result['committed_update_seq'], 0)
+
+    def checkResultOk(self, result):
+        self.assertEquals(result, {'ok': True})
+
+    def checkResultEmptyView(self, result):
+        self.assertEquals(result['rows'], [])
+        self.assertEquals(result['total_rows'], 0)
+        self.assertEquals(result['offset'], 0)
 
 def eight_bit_test_string():
     return ''.join(chr(cn) for cn in xrange(0x100)) * 2

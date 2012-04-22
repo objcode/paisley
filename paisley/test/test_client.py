@@ -442,19 +442,13 @@ class ConnectedCouchDBTestCase(TestCase):
         return d
 
 
-class RealCouchDBTestCase(TestCase):
+class RealCouchDBTestCase(util.CouchDBTestCase):
 
     def setUp(self):
-        self.wrapper = util.CouchDBWrapper()
-        self.wrapper.start()
-        self.db = self.wrapper.db
+        util.CouchDBTestCase.setUp(self)
         self.bound = False
         self.db_name = 'test'
         return self._resetDatabase()
-
-    def tearDown(self):
-        self.wrapper.stop()
-        pass
 
     def _resetDatabase(self):
         """
@@ -464,20 +458,10 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
         d.addCallback(lambda _: self.db.createDB(self.db_name))
-
-        def createOkCb(result):
-            self.assertEquals(result, {'ok': True})
-        d.addCallback(createOkCb)
+        d.addCallback(self.checkResultOk)
         d.addCallback(lambda _: self.db.infoDB(self.db_name))
 
-        def checkInfoNewDatabase(result):
-            self.assertEquals(result['update_seq'], 0)
-            self.assertEquals(result['purge_seq'], 0)
-            self.assertEquals(result['doc_count'], 0)
-            self.assertEquals(result['db_name'], 'test')
-            self.assertEquals(result['doc_del_count'], 0)
-            self.assertEquals(result['committed_update_seq'], 0)
-        d.addCallback(checkInfoNewDatabase)
+        d.addCallback(self.checkInfoNewDatabase)
         # We need to know the version to perform the tests
         #   Ideally the client class would trigger this automatically
         d.addCallback(lambda _: self.db.getVersion())
@@ -495,12 +479,9 @@ class RealCouchDBTestCase(TestCase):
         else:
             d.addCallback(lambda _: self.db.deleteDB(self.db_name))
 
-        def deleteCb(result):
-            self.assertEquals(result, {'ok': True})
-
         def deleteFailedCb(failure):
             pass
-        d.addCallbacks(deleteCb, deleteFailedCb)
+        d.addCallbacks(self.checkResultOk, deleteFailedCb)
         d.callback(None)
         return d
 
@@ -529,10 +510,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
         d.addCallback(lambda _: self.db.getVersion())
         d.addCallback(lambda _: self.db.createDB('test'))
-
-        def createCb(result):
-            self.assertEquals(result, {'ok': True})
-        d.addCallback(createCb)
+        d.addCallback(self.checkResultOk)
         d.addCallback(lambda _: self.db.listDB())
 
         def listCb(result):
@@ -559,10 +537,11 @@ class RealCouchDBTestCase(TestCase):
 
         def addViewCb(result):
             self.assertEquals(result[u'ok'], True)
+            self.assertEquals(result[u'id'], u'_design/test')
         d.addCallback(addViewCb)
         d.addCallback(lambda _: self.db.openView('test', 'test', 'test'))
 
-        def openView1Cb(result):
+        def openViewCb(result):
             self.assertEquals(result[u'total_rows'], 1)
             self.assertEquals(result[u'offset'], 0)
             self.assertEquals(result[u'rows'][0][u'id'], u'1')
@@ -571,20 +550,10 @@ class RealCouchDBTestCase(TestCase):
             self.assertEquals(result[u'rows'][0][u'value'][u'number'], 1)
             self.assertEquals(result[u'rows'][0][u'value'][u'_rev'],
                 self.doc_rev)
-        d.addCallback(openView1Cb)
+        d.addCallback(openViewCb)
         d.addCallback(lambda _:
             self.db.openView('test', 'test', 'test', keys=[1]))
-
-        def openView2Cb(result):
-            self.assertEquals(result[u'total_rows'], 1)
-            self.assertEquals(result[u'offset'], 0)
-            self.assertEquals(result[u'rows'][0][u'id'], u'1')
-            self.assertEquals(result[u'rows'][0][u'key'], 1)
-            self.assertEquals(result[u'rows'][0][u'value'][u'_id'], u'1')
-            self.assertEquals(result[u'rows'][0][u'value'][u'number'], 1)
-            self.assertEquals(result[u'rows'][0][u'value'][u'_rev'],
-                self.doc_rev)
-        d.addCallback(openView2Cb)
+        d.addCallback(openViewCb)
         d.addCallback(lambda _:
             self.db.openView('test', 'test', 'test', keys = [0]))
 
@@ -595,10 +564,7 @@ class RealCouchDBTestCase(TestCase):
             self.assertEquals(result[u'rows'], [])
         d.addCallback(openView3Cb)
         d.addCallback(lambda _: self.db.deleteDB('test'))
-
-        def deleteCb(result):
-            self.assertEquals(result, {'ok': True})
-        d.addCallback(deleteCb)
+        d.addCallback(self.checkResultOk)
         d.addCallback(lambda _: self.db.listDB())
 
         def listCbAgain(result):
@@ -621,10 +587,7 @@ class RealCouchDBTestCase(TestCase):
         #   specifically testing the creation, we need to delete it first
         d.addCallback(lambda _: self._deleteTestDatabaseIfExists())
         d.addCallback(lambda _: self.db.createDB(self.db_name))
-
-        def createCb(result):
-            self.assertEquals(result, {'ok': True})
-        d.addCallback(createCb)
+        d.addCallback(self.checkResultOk)
         d.callback(None)
         return d
 
@@ -634,10 +597,7 @@ class RealCouchDBTestCase(TestCase):
         """
         d = defer.Deferred()
         d.addCallback(lambda _: self.db.deleteDB(self.db_name))
-
-        def deleteCb(result):
-            self.assertEquals(result, {'ok': True})
-        d.addCallback(deleteCb)
+        d.addCallback(self.checkResultOk)
         d.callback(None)
         return d
 
@@ -667,15 +627,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # Get info about newly created database
         d.addCallback(lambda _: self.db.infoDB(self.db_name))
-
-        def checkInfoNewDatabase(result):
-            self.assertEquals(result['update_seq'], 0)
-            self.assertEquals(result['purge_seq'], 0)
-            self.assertEquals(result['doc_count'], 0)
-            self.assertEquals(result['db_name'], 'test')
-            self.assertEquals(result['doc_del_count'], 0)
-            self.assertEquals(result['committed_update_seq'], 0)
-        d.addCallback(checkInfoNewDatabase)
+        d.addCallback(self.checkInfoNewDatabase)
         d.callback(None)
         return d
 
@@ -686,12 +638,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name))
-
-        def checkDatabaseEmpty(result):
-            self.assertEquals(result['rows'], [])
-            self.assertEquals(result['total_rows'], 0)
-            self.assertEquals(result['offset'], 0)
-        d.addCallback(checkDatabaseEmpty)
+        d.addCallback(self.checkDatabaseEmpty)
         d.callback(None)
         return d
 
@@ -702,12 +649,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name, reverse=True))
-
-        def checkDatabaseEmpty(result):
-            self.assertEquals(result['rows'], [])
-            self.assertEquals(result['total_rows'], 0)
-            self.assertEquals(result['offset'], 0)
-        d.addCallback(checkDatabaseEmpty)
+        d.addCallback(self.checkDatabaseEmpty)
         d.callback(None)
         return d
 
@@ -718,12 +660,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name, startKey=2))
-
-        def checkDatabaseEmpty(result):
-            self.assertEquals(result['rows'], [])
-            self.assertEquals(result['total_rows'], 0)
-            self.assertEquals(result['offset'], 0)
-        d.addCallback(checkDatabaseEmpty)
+        d.addCallback(self.checkDatabaseEmpty)
         d.callback(None)
         return d
 
@@ -734,12 +671,7 @@ class RealCouchDBTestCase(TestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _: self.db.listDoc(self.db_name, limit=3))
-
-        def checkDatabaseEmpty(result):
-            self.assertEquals(result['rows'], [])
-            self.assertEquals(result['total_rows'], 0)
-            self.assertEquals(result['offset'], 0)
-        d.addCallback(checkDatabaseEmpty)
+        d.addCallback(self.checkDatabaseEmpty)
         d.callback(None)
         return d
 
@@ -751,12 +683,7 @@ class RealCouchDBTestCase(TestCase):
         # List documents in newly created database
         d.addCallback(lambda _:
             self.db.listDoc(self.db_name, limit=3, startKey=1, reverse=True))
-
-        def checkDatabaseEmpty(result):
-            self.assertEquals(result['rows'], [])
-            self.assertEquals(result['total_rows'], 0)
-            self.assertEquals(result['offset'], 0)
-        d.addCallback(checkDatabaseEmpty)
+        d.addCallback(self.checkDatabaseEmpty)
         d.callback(None)
         return d
 
@@ -905,12 +832,7 @@ class RealCouchDBTestCase(TestCase):
         ]
         d.addCallback(lambda _: self.db.openView(
             self.db_name, doc_id, view1_id, keys=keys, limit=5))
-
-        def checkOpenView(result):
-            self.assertEquals(result["rows"], [])
-            self.assertEquals(result["total_rows"], 0)
-            self.assertEquals(result["offset"], 0)
-        d.addCallback(checkOpenView)
+        d.addCallback(self.checkResultEmptyView)
         d.callback(None)
         return d
 
@@ -925,12 +847,7 @@ class RealCouchDBTestCase(TestCase):
         }'''
         doc = {'map': view1}
         d.addCallback(lambda _: self.db.tempView(self.db_name, doc))
-
-        def checkView(result):
-            self.assertEquals(result['rows'], [])
-            self.assertEquals(result['total_rows'], 0)
-            self.assertEquals(result['offset'], 0)
-        d.addCallback(checkView)
+        d.addCallback(self.checkResultEmptyView)
         d.callback(None)
         return d
 
@@ -1013,18 +930,12 @@ class UnicodeTestCase(util.CouchDBTestCase):
     def setUp(self):
         util.CouchDBTestCase.setUp(self)
         d = self.db.createDB('test')
-
-        def createCb(result):
-            self.assertEquals(result, {'ok': True})
-        d.addCallback(createCb)
+        d.addCallback(self.checkResultOk)
         return d
 
     def tearDown(self):
         d = self.db.deleteDB('test')
-
-        def deleteCb(result):
-            self.assertEquals(result, {'ok': True})
-        d.addCallback(deleteCb)
+        d.addCallback(self.checkResultOk)
         d.addCallback(lambda _: util.CouchDBTestCase.tearDown(self))
         return d
 
