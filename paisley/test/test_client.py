@@ -1007,7 +1007,8 @@ class ResponseReceiverTestCase(TestCase):
         rvr = client.ResponseReceiver(d, decode_utf8=True)
 
         # "Internationalization" string from
-        # http://rentzsch.tumblr.com/post/9133498042/howto-use-utf-8-throughout-your-web-stack
+        # http://rentzsch.tumblr.com
+        # /post/9133498042/howto-use-utf-8-throughout-your-web-stack
         data = u'\u201cI\xf1t\xebrn\xe2ti\xf4n\xe0liz\xe6ti\xf8n\u201d'
         d.addCallback(lambda encoded_out: self.assertEqual(encoded_out, data))
 
