@@ -8,10 +8,7 @@
 Test for couchdb client.
 """
 
-try:
-    import json
-except:
-    import simplejson as json
+from paisley import pjson as json
 
 import cgi
 
@@ -79,7 +76,7 @@ class CouchDBTestCase(TestCase):
         import logging
         log = logging.getLogger('paisley')
         self.assertEqual(log, client.log)
-    
+
     def test_auth_init(self):
         """
         Test setting up client with authentication
@@ -87,7 +84,7 @@ class CouchDBTestCase(TestCase):
         self.client_auth = client.CouchDB("localhost",
                                            username="test",
                                            password="testpass")
-        
+
         self.assertEquals(self.client_auth.username, "test")
         self.assertEquals(self.client_auth.password, "testpass")
 
@@ -368,9 +365,9 @@ class CouchDBTestCase(TestCase):
             self.client.uri.startswith('/mydb2/_design/viewdoc2/_view/myview2'))
         query = cgi.parse_qs(self.client.uri.split('?', 1)[-1])
         self.assertEquals(query, dict(limit=['5']))
-        self.assertEquals(self.client.kwargs['postdata'], 
+        self.assertEquals(self.client.kwargs['postdata'],
                           '{"keys": [1, 3, 4, "hello, world", {"1": 5}]}')
-        
+
     def test_tempView(self):
         """
         Test tempView.
@@ -466,7 +463,7 @@ class ConnectedCouchDBTestCase(TestCase):
         return d
 
 class RealCouchDBTestCase(TestCase):
-    
+
     def setUp(self):
         self.wrapper = util.CouchDBWrapper()
         self.wrapper.start()
@@ -478,7 +475,7 @@ class RealCouchDBTestCase(TestCase):
     def tearDown(self):
         self.wrapper.stop()
         pass
-        
+
     def _resetDatabase(self):
         """
         Helper method to create an empty test database, deleting the existing one if required.
@@ -504,7 +501,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(lambda _: self.db.getVersion())
         d.callback(None)
         return d
-            
+
     def _deleteTestDatabaseIfExists(self):
         """
         Helper method to delete the test database, wether it exists or not.
@@ -522,7 +519,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallbacks(deleteCb, deleteFailedCb)
         d.callback(None)
         return d
-        
+
     def _saveDoc(self, body, doc_id):
         """
         Helper method to save a document, and verify that it was successfull.
@@ -841,7 +838,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(checkDocumentDeleted)
         d.callback(None)
         return d
-    
+
     def test_addAttachments(self):
         """
         Test addAttachments.
@@ -864,7 +861,7 @@ class RealCouchDBTestCase(TestCase):
 
     #def test_openView(self):
     # This is already covered by test_addViews
-    
+
     def test_openViewWithKeysQuery(self):
         """
         Test openView handles couchdb's strange requirements for keys arguments
@@ -898,7 +895,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(checkOpenView)
         d.callback(None)
         return d
-        
+
     def test_tempView(self):
         """
         Test tempView.
@@ -983,7 +980,7 @@ class RealCouchDBTestCase(TestCase):
         d.addCallback(checkDoc)
         d.callback(None)
         return d
-    
+
 class UnicodeTestCase(util.CouchDBTestCase):
 
     def setUp(self):

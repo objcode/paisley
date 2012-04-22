@@ -13,8 +13,7 @@ from paisley import pjson as json
 from encodings import utf_8
 import logging
 import new
-            
-from StringIO import StringIO
+
 from urllib import urlencode, quote
 from zope.interface import implements
 
@@ -87,17 +86,17 @@ class ResponseReceiver(Protocol):
     """
     Assembles HTTP response from return stream.
     """
-    
+
     def __init__(self, deferred, decode_utf8):
         self.recv_chunks = []
         self.decoder = utf_8.IncrementalDecoder() if decode_utf8 else None
         self.deferred = deferred
-    
+
     def dataReceived(self, bytes, final=False):
         if self.decoder:
             bytes = self.decoder.decode(bytes, final)
         self.recv_chunks.append(bytes)
-    
+
     def connectionLost(self, reason):
         # _newclient and http import reactor
         from twisted.web._newclient import ResponseDone
@@ -108,14 +107,16 @@ class ResponseReceiver(Protocol):
             self.deferred.callback(''.join(self.recv_chunks))
         else:
             self.deferred.errback(reason)
-    
+
 
 class CouchDB(object):
     """
     CouchDB client: hold methods for accessing a couchDB.
     """
 
-    def __init__(self, host, port=5984, dbName=None, username=None, password=None, disable_log=False, version=(1, 0, 1)):
+    def __init__(self, host, port=5984, dbName=None,
+                 username=None, password=None, disable_log=False,
+                 version=(1, 0, 1)):
         """
         Initialize the client for given host.
 
@@ -140,7 +141,7 @@ class CouchDB(object):
         self.url_template = "http://%s:%s%%s" % (self.host, self.port)
         if dbName is not None:
             self.bindToDB(dbName)
-        
+
         if disable_log:
             # since this is the db layer, and we generate a lot of logs,
             # let people disable them completely if they want to.
@@ -156,10 +157,10 @@ class CouchDB(object):
             self.log = logging.getLogger('paisley')
 
 
-        self.log.debug("[%s%s:%s/%s] init new db client", 
-                       '%s@' % (username,) if username else '',
-                       host, 
-                       port, 
+        self.log.debug("[%s%s:%s/%s] init new db client",
+                       '%s@' % (username, ) if username else '',
+                       host,
+                       port,
                        dbName if dbName else '')
         self.version = version
 
@@ -196,7 +197,7 @@ class CouchDB(object):
         # characters (a-z), digits (0-9), and any of the characters _, $, (,
         # ), +, -, and / are allowed. Must begin with a letter."}
 
-        return self.put("/%s/" % (dbName,), "", descr='CreateDB'
+        return self.put("/%s/" % (dbName, ), "", descr='CreateDB'
             ).addCallback(self.parseResult)
 
 
@@ -207,7 +208,7 @@ class CouchDB(object):
         @type  dbName: str
         """
         # Responses: {u'ok': True}, 404 Object Not Found
-        return self.delete("/%s/" % (dbName,)
+        return self.delete("/%s/" % (dbName, )
             ).addCallback(self.parseResult)
 
 
@@ -216,7 +217,8 @@ class CouchDB(object):
         List the databases on the server.
         """
         # Responses: list of db names
-        return self.get("/_all_dbs", descr='listDB').addCallback(self.parseResult)
+        return self.get("/_all_dbs", descr='listDB').addCallback(
+            self.parseResult)
 
 
     def getVersion(self):
@@ -225,7 +227,7 @@ class CouchDB(object):
         """
         # Responses: {u'couchdb': u'Welcome', u'version': u'1.1.0'}
         # Responses: {u'couchdb': u'Welcome', u'version': u'1.1.1a1162549'}
-        d = self.get("/" , descr='version').addCallback(self.parseResult)
+        d = self.get("/", descr='version').addCallback(self.parseResult)
         def cacheVersion(result):
             self.version = self._parseVersion(result['version'])
             return result
@@ -249,7 +251,7 @@ class CouchDB(object):
         """
         # Responses: {u'update_seq': 0, u'db_name': u'mydb', u'doc_count': 0}
         # 404 Object Not Found
-        return self.get("/%s/" % (dbName,), descr='infoDB'
+        return self.get("/%s/" % (dbName, ), descr='infoDB'
             ).addCallback(self.parseResult)
 
 
@@ -263,12 +265,14 @@ class CouchDB(object):
         # u'view': u'_all_docs'}, 404 Object Not Found
         import warnings
         if 'count' in obsolete:
-            warnings.warn("listDoc 'count' parameter has been renamed to 'limit' to reflect "
-                          "changing couchDB api", DeprecationWarning)
+            warnings.warn("listDoc 'count' parameter has been renamed to "
+                          "'limit' to reflect changing couchDB api",
+                          DeprecationWarning)
             limit = obsolete.pop('count')
         if obsolete:
-            raise AttributeError("Unknown attribute(s): %r" % (obsolete.keys(), ))
-        uri = "/%s/_all_docs" % (dbName,)
+            raise AttributeError("Unknown attribute(s): %r" % (
+                obsolete.keys(), ))
+        uri = "/%s/_all_docs" % (dbName, )
         args = {}
         if reverse:
             args["reverse"] = "true"
@@ -277,9 +281,8 @@ class CouchDB(object):
         if limit >= 0:
             args["limit"] = int(limit)
         if args:
-            uri += "?%s" % (urlencode(args),)
-        return self.get(uri, descr='listDoc'
-            ).addCallback(self.parseResult)
+            uri += "?%s" % (urlencode(args), )
+        return self.get(uri, descr='listDoc').addCallback(self.parseResult)
 
 
     def openDoc(self, dbName, docId, revision=None, full=False, attachment=""):
@@ -314,15 +317,14 @@ class CouchDB(object):
 
         uri = "/%s/%s" % (dbName, quote(docId.encode('utf-8')))
         if revision is not None:
-            uri += "?%s" % (urlencode({"rev": revision.encode('utf-8')}),)
+            uri += "?%s" % (urlencode({"rev": revision.encode('utf-8')}), )
         elif full:
-            uri += "?%s" % (urlencode({"full": "true"}),)
+            uri += "?%s" % (urlencode({"full": "true"}), )
         elif attachment:
             uri += "/%s" % quote(attachment)
             # No parsing
             return self.get(uri, descr='openDoc', isJson=False)
-        return self.get(uri, descr='openDoc'
-            ).addCallback(self.parseResult)
+        return self.get(uri, descr='openDoc').addCallback(self.parseResult)
 
 
     def addAttachments(self, document, attachments):
@@ -354,7 +356,8 @@ class CouchDB(object):
         @param docId: if specified, the identifier to be used in the database.
         @type docId: C{unicode}
         """
-        # Responses: {'rev': '1-9dd776365618752ddfaf79d9079edf84', 'ok': True, 'id': '198abfee8852816bc112992564000295'}
+        # Responses: {'rev': '1-9dd776365618752ddfaf79d9079edf84',
+        #             'ok': True, 'id': '198abfee8852816bc112992564000295'}
 
         # 404 Object not found (if database does not exist)
         # 409 Conflict, 500 Internal Server Error
@@ -367,9 +370,10 @@ class CouchDB(object):
         if not isinstance(body, (str, unicode)):
             body = json.dumps(body)
         if docId is not None:
-            d = self.put("/%s/%s" % (dbName, quote(docId.encode('utf-8'))), body, descr='saveDoc')
+            d = self.put("/%s/%s" % (dbName, quote(docId.encode('utf-8'))),
+                body, descr='saveDoc')
         else:
-            d = self.post("/%s/" % (dbName,), body, descr='saveDoc')
+            d = self.post("/%s/" % (dbName, ), body, descr='saveDoc')
         return d.addCallback(self.parseResult)
 
 
@@ -402,8 +406,8 @@ class CouchDB(object):
         return self.delete("/%s/%s?%s" % (
                 dbName,
                 quote(docId.encode('utf-8')),
-                urlencode({'rev': revision.encode('utf-8')}))
-            ).addCallback(self.parseResult)
+                urlencode({'rev': revision.encode('utf-8')}))).addCallback(
+                    self.parseResult)
 
 
     # View operations
@@ -412,11 +416,11 @@ class CouchDB(object):
         """
         Open a view of a document in a given database.
         """
-        # Responses: 
+        # Responses:
         # 500 Internal Server Error (illegal database name)
         def buildUri(dbName=dbName, docId=docId, viewId=viewId, kwargs=kwargs):
             return "/%s/_design/%s/_view/%s?%s" % (
-                dbName, quote(docId), viewId, urlencode(kwargs))            
+                dbName, quote(docId), viewId, urlencode(kwargs))
 
         # if there is a "keys" argument, remove it from the kwargs
         # dictionary now so that it doesn't get double JSON-encoded
@@ -431,16 +435,21 @@ class CouchDB(object):
                 pass
             else:
                 kwargs[k] = json.dumps(v)
-        if 'count' in kwargs : # we keep the paisley API, but couchdb uses limit now
+        # we keep the paisley API, but couchdb uses limit now
+        if 'count' in kwargs:
             kwargs['limit'] = kwargs.pop('count')
 
         # If there's a list of keys to send, POST the
         # query so that we can upload the keys as the body of
         # the POST request, otherwise use a GET request
         if body:
-            return self.post(buildUri(), body=body, descr='openView').addCallback(self.parseResult)
+            return self.post(
+                buildUri(), body=body, descr='openView').addCallback(
+                    self.parseResult)
         else:
-            return self.get(buildUri(), descr='openView').addCallback(self.parseResult)        
+            return self.get(
+                buildUri(), descr='openView').addCallback(
+                    self.parseResult)
 
 
     def addViews(self, document, views):
@@ -464,7 +473,7 @@ class CouchDB(object):
         """
         if not isinstance(view, (str, unicode)):
             view = json.dumps(view)
-        d = self.post("/%s/_temp_view" % (dbName,), view, descr='tempView')
+        d = self.post("/%s/_temp_view" % (dbName, ), view, descr='tempView')
         return d.addCallback(self.parseResult)
 
 
@@ -475,7 +484,7 @@ class CouchDB(object):
         """
         C{getPage}-like.
         """
-        
+
         def cb_recv_resp(response):
             d_resp_recvd = Deferred()
             content_type = response.headers.getRawHeaders('Content-Type',
@@ -485,7 +494,7 @@ class CouchDB(object):
             response.deliverBody(ResponseReceiver(d_resp_recvd,
                 decode_utf8=decode_utf8))
             return d_resp_recvd.addCallback(cb_process_resp, response)
-        
+
         def cb_process_resp(body, response):
             # twisted.web.error imports reactor
             from twisted.web import error as tw_error
@@ -496,28 +505,29 @@ class CouchDB(object):
                 raise tw_error.PageRedirect(response.code, body)
             elif response.code > 399:
                 raise tw_error.Error(response.code, body)
-            
+
             return body
-        
+
         uurl = unicode(self.url_template % (uri, ))
         url = uurl.encode('utf-8')
-        
+
         if not headers:
             headers = {}
-        
+
         if isJson:
             headers["Accept"] = ["application/json"]
             headers["Content-Type"] = ["application/json"]
-        
+
         if self.username:
-            headers["Authorization"] = ["Basic %s" % b64encode("%s:%s" % (self.username, self.password))]
-        
+            headers["Authorization"] = ["Basic %s" % b64encode(
+                "%s:%s" % (self.username, self.password))]
+
         body = StringProducer(postdata) if postdata else None
-        
+
         d = self.client.request(method, url, Headers(headers), body)
-        
+
         d.addCallback(cb_recv_resp)
-        
+
         return d
 
 
@@ -535,7 +545,8 @@ class CouchDB(object):
         Execute a C{POST} of C{body} at C{uri}.
         """
         self.log.debug("[%s:%s%s] POST %s: %s",
-                      self.host, self.port, short_print(uri), descr, short_print(repr(body)))
+                      self.host, self.port, short_print(uri), descr,
+                      short_print(repr(body)))
         return self._getPage(uri, method="POST", postdata=body)
 
 
@@ -544,7 +555,8 @@ class CouchDB(object):
         Execute a C{PUT} of C{body} at C{uri}.
         """
         self.log.debug("[%s:%s%s] PUT %s: %s",
-                       self.host, self.port, short_print(uri), descr, short_print(repr(body)))
+                       self.host, self.port, short_print(uri), descr,
+                       short_print(repr(body)))
         return self._getPage(uri, method="PUT", postdata=body)
 
 

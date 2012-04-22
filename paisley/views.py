@@ -41,7 +41,6 @@ class View(object):
             self._dbName,
             self._docId,
             self._viewId,
-            **self._options
-            )
+            **self._options)
         d.addCallback(self._mapObjects, **self._options)
         return d
