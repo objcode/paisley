@@ -38,6 +38,7 @@ class View(object):
             yield obj
 
     # how do we know if it is bound already ?
+
     def queryView(self):
         d = self._couch.openView(
             self._dbName,

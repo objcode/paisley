@@ -9,11 +9,12 @@ Tests for the object mapping API.
 """
 
 from twisted.trial.unittest import TestCase
-from twisted.internet.defer import succeed
 from paisley import mapping, views
 from test_views import StubCouch
 
 # an object for a view result that includes docs
+
+
 class Tag(mapping.Document):
     name = mapping.TextField()
     count = mapping.IntegerField()
@@ -21,7 +22,9 @@ class Tag(mapping.Document):
     def fromDict(self, dictionary):
         self._data = dictionary['doc']
 
+
 class MappingTests(TestCase):
+
     def setUp(self):
         # this StubCouch is different than in test_views; it replies to
         # include_docs=true, hence it has an additional key/value pair

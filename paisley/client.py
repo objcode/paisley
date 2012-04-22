@@ -31,6 +31,7 @@ except ImportError:
     def b64encode(s):
         return "".join(base64.encodestring(s).split("\n"))
 
+
 def short_print(body, trim=255):
     # don't go nuts on possibly huge log entries
     # since we're a library we should try to avoid calling this and instead
@@ -45,7 +46,9 @@ def short_print(body, trim=255):
 try:
     from functools import partial
 except ImportError:
+
     class partial(object):
+
         def __init__(self, fn, *args, **kw):
             self.fn = fn
             self.args = args
@@ -146,8 +149,10 @@ class CouchDB(object):
             # since this is the db layer, and we generate a lot of logs,
             # let people disable them completely if they want to.
             levels = ['trace', 'debug', 'info', 'warn', 'error', 'exception']
+
             class FakeLog(object):
                 pass
+
             def nullfn(self, *a, **k):
                 pass
             self.log = FakeLog()
@@ -170,7 +175,6 @@ class CouchDB(object):
         """
         return json.loads(result)
 
-
     def bindToDB(self, dbName):
         """
         Bind all operations asking for a DB name to the given DB.
@@ -181,7 +185,6 @@ class CouchDB(object):
             method = getattr(self, methname)
             newMethod = partial(method, dbName)
             setattr(self, methname, newMethod)
-
 
     # Database operations
 
@@ -200,7 +203,6 @@ class CouchDB(object):
         return self.put("/%s/" % (dbName, ), "", descr='CreateDB'
             ).addCallback(self.parseResult)
 
-
     def deleteDB(self, dbName):
         """
         Deletes the database on the server.
@@ -211,7 +213,6 @@ class CouchDB(object):
         return self.delete("/%s/" % (dbName, )
             ).addCallback(self.parseResult)
 
-
     def listDB(self):
         """
         List the databases on the server.
@@ -220,7 +221,6 @@ class CouchDB(object):
         return self.get("/_all_dbs", descr='listDB').addCallback(
             self.parseResult)
 
-
     def getVersion(self):
         """
         Returns the couchDB version.
@@ -228,12 +228,14 @@ class CouchDB(object):
         # Responses: {u'couchdb': u'Welcome', u'version': u'1.1.0'}
         # Responses: {u'couchdb': u'Welcome', u'version': u'1.1.1a1162549'}
         d = self.get("/", descr='version').addCallback(self.parseResult)
+
         def cacheVersion(result):
             self.version = self._parseVersion(result['version'])
             return result
         return d.addCallback(cacheVersion)
 
     def _parseVersion(self, versionString):
+
         def onlyInt(part):
             import re
             intRegexp = re.compile("^(\d+)")
@@ -253,7 +255,6 @@ class CouchDB(object):
         # 404 Object Not Found
         return self.get("/%s/" % (dbName, ), descr='infoDB'
             ).addCallback(self.parseResult)
-
 
     # Document operations
 
@@ -283,7 +284,6 @@ class CouchDB(object):
         if args:
             uri += "?%s" % (urlencode(args), )
         return self.get(uri, descr='listDoc').addCallback(self.parseResult)
-
 
     def openDoc(self, dbName, docId, revision=None, full=False, attachment=""):
         """
@@ -326,7 +326,6 @@ class CouchDB(object):
             return self.get(uri, descr='openDoc', isJson=False)
         return self.get(uri, descr='openDoc').addCallback(self.parseResult)
 
-
     def addAttachments(self, document, attachments):
         """
         Add attachments to a document, before sending it to the DB.
@@ -341,7 +340,6 @@ class CouchDB(object):
         for name, data in attachments.iteritems():
             data = b64encode(data)
             document["_attachments"][name] = {"type": "base64", "data": data}
-
 
     def saveDoc(self, dbName, body, docId=None):
         """
@@ -376,7 +374,6 @@ class CouchDB(object):
             d = self.post("/%s/" % (dbName, ), body, descr='saveDoc')
         return d.addCallback(self.parseResult)
 
-
     def deleteDoc(self, dbName, docId, revision):
         """
         Delete a document on given database.
@@ -409,7 +406,6 @@ class CouchDB(object):
                 urlencode({'rev': revision.encode('utf-8')}))).addCallback(
                     self.parseResult)
 
-
     # View operations
 
     def openView(self, dbName, docId, viewId, **kwargs):
@@ -418,6 +414,7 @@ class CouchDB(object):
         """
         # Responses:
         # 500 Internal Server Error (illegal database name)
+
         def buildUri(dbName=dbName, docId=docId, viewId=viewId, kwargs=kwargs):
             return "/%s/_design/%s/_view/%s?%s" % (
                 dbName, quote(docId), viewId, urlencode(kwargs))
@@ -451,7 +448,6 @@ class CouchDB(object):
                 buildUri(), descr='openView').addCallback(
                     self.parseResult)
 
-
     def addViews(self, document, views):
         """
         Add views to a document.
@@ -466,7 +462,6 @@ class CouchDB(object):
         for name, data in views.iteritems():
             document["views"][name] = data
 
-
     def tempView(self, dbName, view):
         """
         Make a temporary view on the server.
@@ -475,7 +470,6 @@ class CouchDB(object):
             view = json.dumps(view)
         d = self.post("/%s/_temp_view" % (dbName, ), view, descr='tempView')
         return d.addCallback(self.parseResult)
-
 
     # Basic http methods
 
@@ -530,7 +524,6 @@ class CouchDB(object):
 
         return d
 
-
     def get(self, uri, descr='', isJson=True):
         """
         Execute a C{GET} at C{uri}.
@@ -538,7 +531,6 @@ class CouchDB(object):
         self.log.debug("[%s:%s%s] GET %s",
                        self.host, self.port, short_print(uri), descr)
         return self._getPage(uri, method="GET", isJson=isJson)
-
 
     def post(self, uri, body, descr=''):
         """
@@ -549,7 +541,6 @@ class CouchDB(object):
                       short_print(repr(body)))
         return self._getPage(uri, method="POST", postdata=body)
 
-
     def put(self, uri, body, descr=''):
         """
         Execute a C{PUT} of C{body} at C{uri}.
@@ -558,7 +549,6 @@ class CouchDB(object):
                        self.host, self.port, short_print(uri), descr,
                        short_print(repr(body)))
         return self._getPage(uri, method="PUT", postdata=body)
-
 
     def delete(self, uri, descr=''):
         """

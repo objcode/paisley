@@ -81,7 +81,8 @@ stderr:
             raise Exception("Cannot find port in line %s" % line)
 
         self.port = int(m.group('port'))
-        self.db = client.CouchDB(host='localhost', port=self.port, username='testpaisley', password='testpaisley')
+        self.db = client.CouchDB(host='localhost', port=self.port,
+            username='testpaisley', password='testpaisley')
 
     def stop(self):
         self.process.terminate()
@@ -107,6 +108,7 @@ class CouchDBTestCase(unittest.TestCase):
         self.wrapper.stop()
 
     # helper callbacks
+
     def checkDatabaseEmpty(self, result):
         self.assertEquals(result['rows'], [])
         self.assertEquals(result['total_rows'], 0)
@@ -127,6 +129,7 @@ class CouchDBTestCase(unittest.TestCase):
         self.assertEquals(result['rows'], [])
         self.assertEquals(result['total_rows'], 0)
         self.assertEquals(result['offset'], 0)
+
 
 def eight_bit_test_string():
     return ''.join(chr(cn) for cn in xrange(0x100)) * 2
