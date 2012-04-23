@@ -37,7 +37,12 @@ def _get_loads(strict=STRICT):
         return loads
 
     from json import decoder
-    res = decoder.c_scanstring('"str"', 1)
+    try:
+        res = decoder.c_scanstring('"str"', 1)
+    except TypeError:
+        # github issue #33: pypy may not have c_scanstring
+        res = decoder.scanstring('"str"', 1)
+
     if type(res[0]) is unicode:
         from json import loads
         return loads
