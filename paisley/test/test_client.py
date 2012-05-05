@@ -188,9 +188,9 @@ class CouchDBTestCase(TestCase):
 
     def test_listDocStartKey(self):
         """
-        Test listDoc with a startKey.
+        Test listDoc with a start_key.
         """
-        d = self.client.listDoc("mydb", startKey=2)
+        d = self.client.listDoc("mydb", startkey=2)
         self.assertEquals(self.client.uri, "/mydb/_all_docs?startkey=2")
         self.assertEquals(self.client.kwargs["method"], "GET")
         return self._checkParseDeferred(d)
@@ -208,7 +208,7 @@ class CouchDBTestCase(TestCase):
         """
         Test listDoc with all options activated.
         """
-        d = self.client.listDoc("mydb", limit=3, startKey=1, reverse=True)
+        d = self.client.listDoc("mydb", limit=3, startkey=1, reverse=True)
         self.assertEquals(self.client.uri,
             "/mydb/_all_docs?startkey=1&limit=3&reverse=true")
         self.assertEquals(self.client.kwargs["method"], "GET")
@@ -655,11 +655,11 @@ class RealCouchDBTestCase(util.CouchDBTestCase):
 
     def test_listDocStartKey(self):
         """
-        Test listDoc with a startKey.
+        Test listDoc with a startkey.
         """
         d = defer.Deferred()
         # List documents in newly created database
-        d.addCallback(lambda _: self.db.listDoc(self.db_name, startKey=2))
+        d.addCallback(lambda _: self.db.listDoc(self.db_name, startkey=u'2'))
         d.addCallback(self.checkDatabaseEmpty)
         d.callback(None)
         return d
@@ -682,7 +682,8 @@ class RealCouchDBTestCase(util.CouchDBTestCase):
         d = defer.Deferred()
         # List documents in newly created database
         d.addCallback(lambda _:
-            self.db.listDoc(self.db_name, limit=3, startKey=1, reverse=True))
+            self.db.listDoc(self.db_name, limit=3, startkey=u'1',
+                reverse=True))
         d.addCallback(self.checkDatabaseEmpty)
         d.callback(None)
         return d

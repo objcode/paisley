@@ -259,7 +259,7 @@ class CouchDB(object):
     # Document operations
 
     def listDoc(self, dbName, reverse=False, startkey=None, endkey=None,
-                include_docs=True, limit=-1, **obsolete):
+                include_docs=False, limit=-1, **obsolete):
         """
         List all documents in a given database.
         """
