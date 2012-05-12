@@ -10,6 +10,19 @@ Paisley JSON compatibility code.
 json is the stdlib JSON library.
 It has an unfortunate bug in 2.7: http://bugs.python.org/issue10038
 where the C-based implementation returns str instead of unicode for text.
+
+This caused
+  import json; json.loads('"abc"')
+to return
+  "abc"
+instead of
+  u"abc"
+when using the C implementation, but not the python implementation.
+
+If json is not installed, this falls back to simplejson, which is
+also not strict and will return str instead of unicode.
+
+In that case, STRICT will be set to True.
 """
 
 STRICT = True
@@ -36,7 +49,14 @@ def _get_loads(strict=STRICT):
             from json import loads
         return loads
 
-    from json import decoder
+    # If we don't have json, we can only fall back to simplejson, non-strict
+    try:
+        from json import decoder
+    except ImportError:
+        global STRICT
+        STRICT = False
+        from simplejson import loads
+        return loads
     try:
         res = decoder.c_scanstring('"str"', 1)
     except TypeError:
@@ -75,8 +95,15 @@ def _get_dumps(strict=STRICT):
             from json import dumps
         return dumps
 
-    from json import dumps
-    return dumps
+
+    try:
+        from json import dumps
+        return dumps
+    except ImportError:
+        global STRICT
+        STRICT = False
+        from simplejson import dumps
+        return dumps
 
 dumps = _get_dumps()
 loads = _get_loads()
