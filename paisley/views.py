@@ -23,6 +23,10 @@ class View(object):
         self._objectFactory = objectFactory
         self._options = options
 
+    def __repr__(self):
+        return "<View on db %r, doc %r, view %r>" % (
+            self._dbName, self._docId, self._viewId)
+
     def _mapObjects(self, result, **options):
         # result is a dict:
         # rows -> dict with id, key, value, [doc?]
